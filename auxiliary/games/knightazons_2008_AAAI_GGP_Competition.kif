@@ -1,0 +1,181 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Knight-azons
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; ROLE Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(role white)
+(role black)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; INIT Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(init (cell  4  1 white))
+(init (cell  7  1 white))
+(init (cell  1  4 white))
+(init (cell 10  4 white))
+
+(init (cell  1  7 black))
+(init (cell 10  7 black))
+(init (cell  4 10 black))
+(init (cell  7 10 black))
+
+(init (control white))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; LEGAL Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(<= (legal white noop)
+	(true (control black)))
+(<= (legal black noop)
+	(true (control white)))
+	
+(<= (legal ?player (play ?x1 ?y1 ?x2 ?y2 ?x3 ?y3))
+	(true (control ?player))
+	(true (cell ?x1 ?y1 ?player))
+	(knightMove ?x1 ?y1 ?x2 ?y2)
+	(emptyCell ?x2 ?y2)
+	(knightMove ?x2 ?y2 ?x3 ?y3)
+	(emptyCell ?x3 ?y3))
+	
+(<= (legal ?player (play ?x1 ?y1 ?x2 ?y2 ?x1 ?y1))
+	(true (control ?player))
+	(true (cell ?x1 ?y1 ?player))
+	(knightMove ?x1 ?y1 ?x2 ?y2)
+	(emptyCell ?x2 ?y2))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; NEXT Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
+(<= (next (cell ?x ?y ?state))
+    (true (cell ?x ?y ?state))
+    (does ?player (play ?x1 ?y1 ?x2 ?y2 ?x3 ?y3))
+    (distinctCell ?x ?y ?x1 ?y1))
+    
+(<= (next (cell ?x2 ?y2 ?player))
+    (does ?player (play ?x1 ?y1 ?x2 ?y2 ?x3 ?y3)))
+    
+(<= (next (cell ?x3 ?y3 arrow))
+    (does ?player (play ?x1 ?y1 ?x2 ?y2 ?x3 ?y3)))
+    
+(<= (next (control black))
+    (true (control white)))
+(<= (next (control white))
+    (true (control black)))
+    
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; TERMINAL Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(<= terminal
+    (not (legalMove white)))
+(<= terminal
+    (not (legalMove black)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; GOAL Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(<= (goal white 100)
+    (not (legalMove black)))
+(<= (goal white 0)
+    (legalMove black))
+    
+(<= (goal black 100)
+    (not (legalMove white)))
+(<= (goal black 0)
+    (legalMove white))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; View Definitions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(<= (legalMove ?player)
+    (true (cell ?x ?y ?player))
+    (knightMove ?x ?y ?xAny ?yAny)
+    (emptyCell ?xAny ?yAny))
+
+(<= (knightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 1 ?x1 ?x2)
+	(plus 2 ?y1 ?y2))
+(<= (knightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 1 ?x1 ?x2)
+	(plus 2 ?y2 ?y1))
+(<= (knightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 1 ?x2 ?x1)
+	(plus 2 ?y1 ?y2))
+(<= (knightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 1 ?x2 ?x1)
+	(plus 2 ?y2 ?y1))
+(<= (knightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 2 ?x1 ?x2)
+	(plus 1 ?y1 ?y2))
+(<= (knightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 2 ?x1 ?x2)
+	(plus 1 ?y2 ?y1))
+(<= (knightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 2 ?x2 ?x1)
+	(plus 1 ?y1 ?y2))
+(<= (knightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 2 ?x2 ?x1)
+	(plus 1 ?y2 ?y1))
+
+(<= (cell ?x ?y)
+	(index ?x)
+	(index ?y))
+
+(<= (emptyCell ?x ?y)
+	(cell ?x ?y)
+	(not (true (cell ?x ?y white)))
+	(not (true (cell ?x ?y black)))
+	(not (true (cell ?x ?y arrow))))
+	
+(<= (distinctCell ?x1 ?y1 ?x2 ?y2)
+	(cell ?x1 ?y1)
+	(cell ?x2 ?y2)
+	(distinct ?x1 ?x2))
+(<= (distinctCell ?x1 ?y1 ?x2 ?y2)
+	(cell ?x1 ?y1)
+	(cell ?x2 ?y2)
+	(distinct ?y1 ?y2))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Static Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(index  1)
+(index  2)
+(index  3)
+(index  4)
+(index  5)
+(index  6)
+(index  7)
+(index  8)
+(index  9)
+(index 10)
+
+(plus 1 1  2)
+(plus 1 2  3)
+(plus 1 3  4)
+(plus 1 4  5)
+(plus 1 5  6)
+(plus 1 6  7)
+(plus 1 7  8)
+(plus 1 8  9)
+(plus 1 9 10)
+
+(plus 2 1  3)
+(plus 2 2  4)
+(plus 2 3  5)
+(plus 2 4  6)
+(plus 2 5  7)
+(plus 2 6  8)
+(plus 2 7  9)
+(plus 2 8 10)

@@ -1,0 +1,421 @@
+;;blob wars
+(role white)
+(role black)
+(init (piece 3 3 white))
+(init (piece 3 4 white))
+(init (piece 4 4 black))
+(init (piece 4 5 black))
+(init (control white))
+(init (squarecount 4))
+(init (piececount white 2))
+(init (piececount black 2))
+(init (noopcounter 0))
+
+(<= (legal ?r noop) (role ?r))
+
+;;can replicate to neighboring cells
+(<= (legal white (rep ?x1 ?y1 ?x2 ?y2)) (index ?x1)(index ?y1)(index ?x2)(index ?y2)(true (piece ?x1 ?y1 white))(neighbor ?x1 ?x2)(neighbor ?y1 ?y2)(neighborcell ?x1 ?y1 ?x2 ?y2)(true (control white))(not (true (piece ?x2 ?y2 black)))(not (true (piece ?x2 ?y2 white))))
+(<= (legal black (rep ?x1 ?y1 ?x2 ?y2)) (index ?x1)(index ?y1)(index ?x2)(index ?y2)(true (piece ?x1 ?y1 black))(neighbor ?x1 ?x2)(neighbor ?y1 ?y2)(neighborcell ?x1 ?y1 ?x2 ?y2)(true (control black))(not (true (piece ?x2 ?y2 black)))(not (true (piece ?x2 ?y2 white))))
+
+;;can jump to non-neighboring cells
+(<= (legal white (jump ?x1 ?y1 ?x2 ?y2))  (index ?x1)(index ?y1)(index ?x2)(index ?y2) 
+	(true (piece ?x1 ?y1 white))(neighbor ?x1 ?x2)(neighbor ?y1 ?y2)(not (neighborcell ?x1 ?y1 ?x2 ?y2))(true (control white))(not (true (piece ?x2 ?y2 black)))
+	(not (true (piece ?x2 ?y2 white))))
+	
+(<= (legal white (jump ?x1 ?y1 ?x2 ?y2)) (index ?x1)(index ?y1)(index ?x2)(index ?y2)
+	(true (piece ?x1 ?y1 white))(neighbor ?x1 ?x2)(neighbor ?y1 ?y2)(not (neighborcell ?x1 ?y1 ?x2 ?y2))(true (control white))(not (true (piece ?x2 ?y2 black)))
+	(not (true (piece ?x2 ?y2 white))))
+	
+(<= (legal black (jump ?x1 ?y1 ?x2 ?y2)) (index ?x1)(index ?y1)(index ?x2)(index ?y2)
+	(true (piece ?x1 ?y1 black))(neighbor ?x1 ?x2)(neighbor ?y1 ?y2)(not (neighborcell ?x1 ?y1 ?x2 ?y2))(true (control black))(not (true (piece ?x2 ?y2 black)))
+	(not (true (piece ?x2 ?y2 white))))
+	
+(<= (legal black (jump ?x1 ?y1 ?x2 ?y2)) (index ?x1)(index ?y1)(index ?x2)(index ?y2)
+	(true (piece ?x1 ?y1 black))(neighbor ?x1 ?x2)(neighbor ?y1 ?y2)(not (neighborcell ?x1 ?y1 ?x2 ?y2))(true (control black))(not (true (piece ?x2 ?y2 black)))
+	(not (true (piece ?x2 ?y2 white))))
+
+;;if the controlling side plays a noop, increment the noop counter
+(<= (next (noopcounter ?n))(true (noopcounter ?o))(plusPlus ?o ?n)(does ?r1 noop)(true (control ?r1)))
+
+;;reset the noop counter
+(<= (next (noopcounter 0))(true (control ?r1))(not (does ?r1 noop)))
+
+;;add the piece to the new move location
+(<= (next (piece ?x2 ?y2 ?r1)) (does ?r1 (rep ?x1 ?y1 ?x2 ?y2)))
+(<= (next (piece ?x2 ?y2 ?r1)) (does ?r1 (jump ?x1 ?y1 ?x2 ?y2)))
+
+;;keep piece at old location
+(<= (next (piece ?x1 ?y1 ?r1)) (does ?r1 (rep ?x1 ?y1 ?x2 ?y2)))
+
+;;increment squarecount if rep
+(<= (next (squarecount ?n)) (does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(true (squarecount ?o))(plusPlus ?o ?n))
+
+;;maintain squarecount otherwise
+(<= (next (squarecount ?n)) (true (control ?r1))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(true (squarecount ?n)))
+(<= (next (squarecount ?n)) (true (control ?r1))(does ?r1 noop)(true (squarecount ?n)))
+
+;;keep all the moving player's pieces on the board except for the piece being moved
+(<= (next (piece ?x ?y ?r1)) (index ?x)(index ?x1)(true (piece ?x ?y ?r1)) (does ?r1 (jump ?x1 ?y1 ?x2 ?y2)) (distinct ?x ?x1))
+(<= (next (piece ?x ?y ?r1)) (index ?y)(index ?y1)(true (piece ?x ?y ?r1)) (does ?r1 (jump ?x1 ?y1 ?x2 ?y2)) (distinct ?y ?y1))
+(<= (next (piece ?x ?y ?r1)) (index ?x)(index ?x1)(true (piece ?x ?y ?r1)) (does ?r1 (rep ?x1 ?y1 ?x2 ?y2)) (distinct ?x ?x1))
+(<= (next (piece ?x ?y ?r1)) (index ?y)(index ?y1)(true (piece ?x ?y ?r1)) (does ?r1 (rep ?x1 ?y1 ?x2 ?y2)) (distinct ?y ?y1))
+
+;;keep enemy pieces not neighboring the move square
+(<= (next (piece ?x ?y ?r1)) (role ?r1)(not (true (control ?r1)))(does ?r2 (jump ?x1 ?y1 ?x2 ?y2))(index ?x)(index ?y)(index ?x2)(index ?y2)(not (neighborcell ?x ?y ?x2 ?y2))(true (piece ?x ?y ?r1)))
+(<= (next (piece ?x ?y ?r1)) (role ?r1)(not (true (control ?r1)))(does ?r2 (rep ?x1 ?y1 ?x2 ?y2))(index ?x)(index ?y)(index ?x2)(index ?y2)(not (neighborcell ?x ?y ?x2 ?y2))(true (piece ?x ?y ?r1)))
+(<= (next (piece ?x ?y ?r1)) (true (control ?r2))(does ?r2 noop)(true (piece ?x ?y ?r1)))
+
+;;convert enemy pieces that are neighboring
+(<= (next (piece ?x ?y ?r2)) (true (control ?r2))(role ?r1)(not (true (control ?r1)))(true (piece ?x ?y ?r1)) (does ?r2 (jump ?x1 ?y1 ?x2 ?y2)) (neighborcell ?x ?y ?x2 ?y2))
+(<= (next (piece ?x ?y ?r2)) (true (control ?r2))(role ?r1)(not (true (control ?r1)))(true (piece ?x ?y ?r1)) (does ?r2 (rep ?x1 ?y1 ?x2 ?y2)) (neighborcell ?x ?y ?x2 ?y2))
+
+;;flip control
+(<= (next (control black))(true (control white)))
+(<= (next (control white))(true (control black)))
+
+;;no captures
+(<= (next (piececount ?r1 ?n))(true (control ?r2))(does ?r2 noop)(true (piececount ?r1 ?n)))
+
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?n)))
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?n))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?n)))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?n)))	
+
+;;1 capture
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?n))
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?n))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?o))(plusPlus ?n ?o))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?o))(plusPlus ?n ?o))	
+
+
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(true (piece ?nx2 ?ny2 ?r2))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?n))
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(true (piece ?nx2 ?ny2 ?r2))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?n))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(true (piece ?nx2 ?ny2 ?r2))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?o))(plusPlus ?n ?o))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(true (piece ?nx2 ?ny2 ?r2))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?o))(plusPlus ?n ?o))
+	
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(true (piece ?nx3 ?ny3 ?r2))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?n))
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(true (piece ?nx3 ?ny3 ?r2))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?n))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(true (piece ?nx3 ?ny3 ?r2))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?o))(plusPlus ?n ?o))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(true (piece ?nx3 ?ny3 ?r2))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?o))(plusPlus ?n ?o))
+	
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?n))
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?n))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r2 ?o))(plusPlus ?n ?o))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r2 ?o))(plusPlus ?n ?o))
+
+;;2 captures
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(true (piece ?nx2 ?ny2 ?r2))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?n))
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(true (piece ?nx2 ?ny2 ?r2))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?o2)(plusPlus ?o2 ?n))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(true (piece ?nx2 ?ny2 ?r2))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?o))(plusPlus ?o1 ?o)(plusPlus ?n ?o1))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(true (piece ?nx2 ?ny2 ?r2))(not (true (piece ?nx3 ?ny3 ?r2)))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?o))(plusPlus ?o1 ?o)(plusPlus ?n ?o1))
+	
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(not (true (piece ?nx2 ?ny2 ?r2)))(true (piece ?nx3 ?ny3 ?r2))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?n))
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(not (true (piece ?nx2 ?ny2 ?r2)))(true (piece ?nx3 ?ny3 ?r2))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?o2)(plusPlus ?o2 ?n))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(not (true (piece ?nx2 ?ny2 ?r2)))(true (piece ?nx3 ?ny3 ?r2))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?o))(plusPlus ?o1 ?o)(plusPlus ?n ?o1))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(not (true (piece ?nx2 ?ny2 ?r2)))(true (piece ?nx3 ?ny3 ?r2))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?o))(plusPlus ?o1 ?o)(plusPlus ?n ?o1))
+	
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?n))
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?o2)(plusPlus ?o2 ?n))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r2 ?o))(plusPlus ?o1 ?o)(plusPlus ?n ?o1))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(true (piece ?nx1 ?ny1 ?r2))(not (true (piece ?nx2 ?ny2 ?r2)))(not (true (piece ?nx3 ?ny3 ?r2)))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r2 ?o))(plusPlus ?o1 ?o)(plusPlus ?n ?o1))
+	
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(true (piece ?nx2 ?ny2 ?r2))(true (piece ?nx3 ?ny3 ?r2))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?n))
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(true (piece ?nx2 ?ny2 ?r2))(true (piece ?nx3 ?ny3 ?r2))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?o2)(plusPlus ?o2 ?n))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(true (piece ?nx2 ?ny2 ?r2))(true (piece ?nx3 ?ny3 ?r2))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?o))(plusPlus ?o1 ?o)(plusPlus ?n ?o1))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(true (piece ?nx2 ?ny2 ?r2))(true (piece ?nx3 ?ny3 ?r2))(not (true (piece ?nx4 ?ny4 ?r2)))
+	(true (piececount ?r2 ?o))(plusPlus ?o1 ?o)(plusPlus ?n ?o1))
+	
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(true (piece ?nx2 ?ny2 ?r2))(not (true (piece ?nx3 ?ny3 ?r2)))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?n))
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(true (piece ?nx2 ?ny2 ?r2))(not (true (piece ?nx3 ?ny3 ?r2)))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?o2)(plusPlus ?o2 ?n))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(true (piece ?nx2 ?ny2 ?r2))(not (true (piece ?nx3 ?ny3 ?r2)))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r2 ?o))(plusPlus ?o1 ?o)(plusPlus ?n ?o1))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(true (piece ?nx2 ?ny2 ?r2))(not (true (piece ?nx3 ?ny3 ?r2)))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r2 ?o))(plusPlus ?o1 ?o)(plusPlus ?n ?o1))
+	
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(true (piece ?nx3 ?ny3 ?r2))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?n))
+	
+(<= (next (piececount ?r1 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(true (piece ?nx3 ?ny3 ?r2))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r1 ?o))(plusPlus ?o ?o1)(plusPlus ?o1 ?o2)(plusPlus ?o2 ?n))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (jump ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(true (piece ?nx3 ?ny3 ?r2))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r2 ?o))(plusPlus ?o1 ?o)(plusPlus ?n ?o1))
+	
+(<= (next (piececount ?r2 ?n))(true (control ?r1))(role ?r2)(not (true (control ?r2)))(does ?r1 (rep ?x1 ?y1 ?x2 ?y2))(upneighbor ?nx1 ?ny1 ?x2 ?y2)(downneighbor ?nx2 ?ny2 ?x2 ?y2)
+	(leftneighbor ?nx3 ?ny3 ?x2 ?y2)(rightneighbor ?nx4 ?ny4 ?x2 ?y2)
+	(not (true (piece ?nx1 ?ny1 ?r2)))(not (true (piece ?nx2 ?ny2 ?r2)))(true (piece ?nx3 ?ny3 ?r2))(true (piece ?nx4 ?ny4 ?r2))
+	(true (piececount ?r2 ?o))(plusPlus ?o1 ?o)(plusPlus ?n ?o1))
+
+;;neighbor relations
+(<= (neighborcell ?x ?y ?bx ?y)(plusPlus ?x ?bx) (index ?y))
+(<= (neighborcell ?x ?y ?bx ?y)(plusPlus ?bx ?x) (index ?y))
+(<= (neighborcell ?x ?y ?x ?by)(plusPlus ?y ?by) (index ?x))
+(<= (neighborcell ?x ?y ?x ?by)(plusPlus ?by ?y) (index ?x))
+(<= (upneighbor ?x ?y ?bx ?y)(plusPlus ?bx ?x) (index ?y))
+(<= (downneighbor ?x ?y ?bx ?y)(plusPlus ?x ?bx) (index ?y))
+(<= (rightneighbor ?x ?y ?x ?by)(plusPlus ?by ?y) (index ?x))
+(<= (leftneighbor ?x ?y ?x ?by)(plusPlus ?y ?by) (index ?x))
+
+(<= (goal ?r ?sm) (true (piececount ?r ?s))(role ?r)(scoremap ?s ?sm))
+
+;;end if the board is full
+(<= terminal (true (squarecount 36)))
+
+;;end if both players pass
+(<= terminal (true (noopcounter 2)))
+
+(index 1)
+(index 2)
+(index 3)
+(index 4)
+(index 5)
+(index 6)
+(scoremap 0 0)
+(scoremap 1 2)
+(scoremap 2 5)
+(scoremap 3 8)
+(scoremap 4 11)
+(scoremap 5 13)
+(scoremap 6 16)
+(scoremap 7 19)
+(scoremap 8 22)
+(scoremap 9 25)
+(scoremap 10 27)
+(scoremap 11 30)
+(scoremap 12 33)
+(scoremap 13 36)
+(scoremap 14 38)
+(scoremap 15 41)
+(scoremap 16 44)
+(scoremap 17 47)
+(scoremap 18 50)
+(scoremap 19 52)
+(scoremap 20 55)
+(scoremap 21 58)
+(scoremap 22 61)
+(scoremap 23 63)
+(scoremap 24 66)
+(scoremap 25 69)
+(scoremap 26 72)
+(scoremap 27 75)
+(scoremap 28 77)
+(scoremap 29 80)
+(scoremap 30 83)
+(scoremap 31 86)
+(scoremap 32 88)
+(scoremap 33 91)
+(scoremap 34 94)
+(scoremap 35 97)
+(scoremap 36 100)
+(neighbor 1 1)
+(neighbor 1 2)
+(neighbor 2 1)
+(neighbor 2 2)
+(neighbor 2 3)
+(neighbor 3 2)
+(neighbor 3 3)
+(neighbor 3 4)
+(neighbor 4 3)
+(neighbor 4 4)
+(neighbor 4 5)
+(neighbor 5 4)
+(neighbor 5 5)
+(neighbor 5 6)
+(neighbor 6 5)
+(neighbor 6 6)
+(plusPlus 0 1)
+(plusPlus 1 2)
+(plusPlus 2 3)
+(plusPlus 3 4)
+(plusPlus 4 5)
+(plusPlus 5 6)
+(plusPlus 6 7)
+(plusPlus 7 8)
+(plusPlus 8 9)
+(plusPlus 9 10)
+(plusPlus 10 11)
+(plusPlus 11 12)
+(plusPlus 12 13)
+(plusPlus 13 14)
+(plusPlus 14 15)
+(plusPlus 15 16)
+(plusPlus 16 17)
+(plusPlus 17 18)
+(plusPlus 18 19)
+(plusPlus 19 20)
+(plusPlus 20 21)
+(plusPlus 21 22)
+(plusPlus 22 23)
+(plusPlus 23 24)
+(plusPlus 24 25)
+(plusPlus 25 26)
+(plusPlus 26 27)
+(plusPlus 27 28)
+(plusPlus 28 29)
+(plusPlus 29 30)
+(plusPlus 30 31)
+(plusPlus 31 32)
+(plusPlus 32 33)
+(plusPlus 33 34)
+(plusPlus 34 35)
+(plusPlus 35 36)

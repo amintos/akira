@@ -1,0 +1,199 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Knight-through
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; ROLE Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(role white)
+(role black)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; INIT Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(init (cell 1 1 white))
+(init (cell 2 1 white))
+(init (cell 3 1 white))
+(init (cell 4 1 white))
+(init (cell 5 1 white))
+(init (cell 6 1 white))
+(init (cell 7 1 white))
+(init (cell 8 1 white))
+(init (cell 1 2 white))
+(init (cell 2 2 white))
+(init (cell 3 2 white))
+(init (cell 4 2 white))
+(init (cell 5 2 white))
+(init (cell 6 2 white))
+(init (cell 7 2 white))
+(init (cell 8 2 white))
+
+(init (cell 1 7 black))
+(init (cell 2 7 black))
+(init (cell 3 7 black))
+(init (cell 4 7 black))
+(init (cell 5 7 black))
+(init (cell 6 7 black))
+(init (cell 7 7 black))
+(init (cell 8 7 black))
+(init (cell 1 8 black))
+(init (cell 2 8 black))
+(init (cell 3 8 black))
+(init (cell 4 8 black))
+(init (cell 5 8 black))
+(init (cell 6 8 black))
+(init (cell 7 8 black))
+(init (cell 8 8 black))
+
+(init (control white))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; LEGAL Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(<= (legal white noop)
+	(true (control black)))
+(<= (legal black noop)
+	(true (control white)))
+	
+(<= (legal white (move ?x1 ?y1 ?x2 ?y2))
+	(true (control white))
+	(true (cell ?x1 ?y1 white))
+	(whiteKnightMove ?x1 ?y1 ?x2 ?y2)
+	(not (true (cell ?x2 ?y2 white))))
+
+(<= (legal black (move ?x1 ?y1 ?x2 ?y2))
+	(true (control black))
+	(true (cell ?x1 ?y1 black))
+	(blackKnightMove ?x1 ?y1 ?x2 ?y2)
+	(not (true (cell ?x2 ?y2 black))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; NEXT Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
+(<= (next (cell ?x ?y ?state))
+    (true (cell ?x ?y ?state))
+    (does ?player (move ?x1 ?y1 ?x2 ?y2))
+    (distinctCell ?x ?y ?x1 ?y1)
+    (distinctCell ?x ?y ?x2 ?y2))
+    
+(<= (next (cell ?x2 ?y2 ?player))
+    (does ?player (move ?x1 ?y1 ?x2 ?y2)))
+    
+(<= (next (control black))
+    (true (control white)))
+(<= (next (control white))
+    (true (control black)))
+    
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; TERMINAL Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(<= terminal
+	whiteWin)
+(<= terminal
+	blackWin)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; GOAL Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(<= (goal white 100)
+    whiteWin)
+(<= (goal black 0)
+    whiteWin)
+
+(<= (goal white 0)
+    blackWin)    
+(<= (goal black 100)
+    blackWin)
+
+(<= (goal white 0)
+	(not whiteWin)
+	(not blackWin))
+(<= (goal black 0)
+	(not whiteWin)
+	(not blackWin))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; View Definitions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(<= whiteWin
+	(index ?x)
+	(true (cell ?x 8 white)))
+(<= blackWin
+	(index ?x)
+	(true (cell ?x 1 black)))
+
+(<= (whiteKnightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 1 ?x1 ?x2)
+	(plus 2 ?y1 ?y2))
+(<= (whiteKnightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 1 ?x2 ?x1)
+	(plus 2 ?y1 ?y2))
+(<= (whiteKnightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 2 ?x1 ?x2)
+	(plus 1 ?y1 ?y2))
+(<= (whiteKnightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 2 ?x2 ?x1)
+	(plus 1 ?y1 ?y2))
+
+(<= (blackKnightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 1 ?x1 ?x2)
+	(plus 2 ?y2 ?y1))
+(<= (blackKnightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 1 ?x2 ?x1)
+	(plus 2 ?y2 ?y1))
+(<= (blackKnightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 2 ?x1 ?x2)
+	(plus 1 ?y2 ?y1))
+(<= (blackKnightMove ?x1 ?y1 ?x2 ?y2)
+	(plus 2 ?x2 ?x1)
+	(plus 1 ?y2 ?y1))
+
+(<= (cell ?x ?y)
+	(index ?x)
+	(index ?y))
+
+(<= (distinctCell ?x1 ?y1 ?x2 ?y2)
+	(cell ?x1 ?y1)
+	(cell ?x2 ?y2)
+	(distinct ?x1 ?x2))
+(<= (distinctCell ?x1 ?y1 ?x2 ?y2)
+	(cell ?x1 ?y1)
+	(cell ?x2 ?y2)
+	(distinct ?y1 ?y2))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Static Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(index 1)
+(index 2)
+(index 3)
+(index 4)
+(index 5)
+(index 6)
+(index 7)
+(index 8)
+
+(plus 1 1 2)
+(plus 1 2 3)
+(plus 1 3 4)
+(plus 1 4 5)
+(plus 1 5 6)
+(plus 1 6 7)
+(plus 1 7 8)
+
+(plus 2 1 3)
+(plus 2 2 4)
+(plus 2 3 5)
+(plus 2 4 6)
+(plus 2 5 7)
+(plus 2 6 8)

@@ -1,0 +1,140 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Eight Queens Puzzle
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; ROLE Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(role robot)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; INIT Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(init (step 0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; LEGAL Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(<= (legal robot (place ?x ?y))
+	(index ?x)
+	(index ?y)
+	(not (true (cell ?x ?y queen))))
+	
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; NEXT Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(<= (next (cell ?x ?y ?token))
+	(true (cell ?x ?y ?token)))
+
+(<= (next (cell ?x ?y queen))
+	(does robot (place ?x ?y)))
+(<= (next (cell ?x2 ?y2 hole))
+	(does robot (place ?x1 ?y1))
+	(queenMove ?x1 ?y1 ?x2 ?y2))
+
+(<= (next (step 1))
+	(true (step 0)))
+(<= (next (step ?newStep))
+	(true (step ?oldStep))
+	(plus ?oldStep ?newStep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; TERMINAL Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(<= terminal
+	(true (step 9)))
+(<= terminal 
+	(true (cell ?x ?y queen))
+	(true (cell ?x ?y hole)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; GOAL
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(<= (goal robot ?goal)
+	(true (step ?step))
+	(scoreMap ?step ?goal))
+	
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; View Definitions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(<= (horizontal ?x1 ?y ?x2 ?y)
+	(plus ?x1 ?x2)
+	(index ?y))
+(<= (horizontal ?x1 ?y ?x3 ?y)
+	(plus ?x1 ?x2)
+	(index ?y)
+	(horizontal ?x2 ?y ?x3 ?y))
+
+(<= (vertical ?x ?y1 ?x ?y2)
+	(plus ?y1 ?y2)
+	(index ?x))
+(<= (vertical ?x ?y1 ?x ?y3)
+	(plus ?y1 ?y2)
+	(index ?x)
+	(vertical ?x ?y2 ?x ?y3))
+	
+(<= (diagonalUp ?x1 ?y1 ?x2 ?y2)
+	(plus ?x1 ?x2)
+	(plus ?y1 ?y2))
+(<= (diagonalUp ?x1 ?y1 ?x3 ?y3)
+	(plus ?x1 ?x2)
+	(plus ?y1 ?y2)
+	(diagonalUp ?x2 ?y2 ?x3 ?y3))
+	
+(<= (diagonalDown ?x1 ?y1 ?x2 ?y2)
+	(plus ?x1 ?x2)
+	(plus ?y2 ?y1))
+(<= (diagonalDown ?x1 ?y1 ?x3 ?y3)
+	(plus ?x1 ?x2)
+	(plus ?y2 ?y1)
+	(diagonalDown ?x2 ?y2 ?x3 ?y3))
+
+(<= (rookMove ?x1 ?y1 ?x2 ?y2)
+	(horizontal ?x1 ?y1 ?x2 ?y2))
+(<= (rookMove ?x1 ?y1 ?x2 ?y2)
+	(horizontal ?x2 ?y2 ?x1 ?y1))
+(<= (rookMove ?x1 ?y1 ?x2 ?y2)
+	(vertical ?x1 ?y1 ?x2 ?y2))
+(<= (rookMove ?x1 ?y1 ?x2 ?y2)
+	(vertical ?x2 ?y2 ?x1 ?y1))
+
+(<= (bishopMove ?x1 ?y1 ?x2 ?y2)
+	(diagonalUp ?x1 ?y1 ?x2 ?y2))
+(<= (bishopMove ?x1 ?y1 ?x2 ?y2)
+	(diagonalUp ?x2 ?y2 ?x1 ?y1))
+(<= (bishopMove ?x1 ?y1 ?x2 ?y2)
+	(diagonalDown ?x1 ?y1 ?x2 ?y2))
+(<= (bishopMove ?x1 ?y1 ?x2 ?y2)
+	(diagonalDown ?x2 ?y2 ?x1 ?y1))
+
+(<= (queenMove ?x1 ?y1 ?x2 ?y2)
+	(rookMove ?x1 ?y1 ?x2 ?y2))
+(<= (queenMove ?x1 ?y1 ?x2 ?y2)
+	(bishopMove ?x1 ?y1 ?x2 ?y2))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Static Relations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(index 1) (index 2) (index 3) (index 4) (index 5) (index 6) (index 7) (index 8)
+(plus 1 2) (plus 2 3) (plus 3 4) (plus 4 5) (plus 5 6) (plus 6 7) (plus 7 8) (plus 8 9)
+
+(scoreMap  0   0)
+(scoreMap  1  10)
+(scoreMap  2  20)
+(scoreMap  3  30)
+(scoreMap  4  40)
+(scoreMap  5  50)
+(scoreMap  6  60)
+(scoreMap  7  70)
+(scoreMap  8  85)
+(scoreMap  9 100)
