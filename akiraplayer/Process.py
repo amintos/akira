@@ -14,29 +14,18 @@ class Process(object):
         self.pid = pid
         self.hostName = hostName
         self.creationTime = creationTime
-        self._listeners = []
-
-        for listener in listeners:
-            self.addListener(listener)
 
     @property
     def identityString(self):
         return self._identityString
 
-    def addListener(self, aListener):
-        if aListener not in self._listeners:
-            self._listeners.append(aListener)
-            self.addedListner(aListener)
-
-    def addedListner(self, aListener):
-        pass
-
-    def call(self, aFunction, args, kw):
+    def call(self, aFunction, args, kw = {}):
         raise NotImplementedError('todo')    
     
     def __reduce__(self):
-        return getProcess, (identityString, Process, (identityString, pid,
-                                                      hostName, creationTime),)
+        return getProcess, (self.identityString, self.ProcessClassAfterUnpickling,
+                            (self.identityString, self.pid,
+                             self.hostName, self.creationTime),)
 
     def __eq__(self, other):
         return self.identityString == other.identityString
@@ -50,6 +39,10 @@ class Process(object):
     def isThisProcess(self):
         return thisProcess is self
 
+    def isProcess(self):
+        return True
+
+Process.ProcessClassAfterUnpickling = Process
 
 _cachedProcesses = {}
 _cachedProcessesLock = thread.allocate_lock()
@@ -65,11 +58,51 @@ def getProcess(identityString, ProcessClass, args = (), kw = {}):
 
 
 class _ThisProcess(Process):
-    def call(self, aFunction, args, kw):
+
+    def __init__(self, *args, **kw):
+        Process.__init__(self, *args, **kw)
+        self._listeners = []
+    
+    def call(self, aFunction, args, kw = {}):
         return aFunction(*args, **kw)
+
+    def addListener(self, aListener):
+        if aListener not in self._listeners:
+            self._listeners.append(aListener)
+            self.addedListner(aListener)
 
     def addedListner(self, aListener):
         aListener.listen()
+
+    def removeListener(self, listener):
+        'return the listeners removed.\n'\
+        'They were equal to the one passed to this function'
+        removedListeners = []
+        for index, ownListener in reversed(list(enumerate(self._listeners[:]))):
+            if ownListener == listener:
+                self._listeners.pop(index)
+                self.removedListener(ownListener)
+                removedListeners.append(ownListener)
+        return removedListeners
+        
+    def removedListener(self, listener):
+        listener.close()
+
+    def listenOnIPv4(self):
+        raise NotImplementedError('todo')
+
+    def listenOnPipe(self):
+        raise NotImplementedError('todo')
+
+    def listenOnIPv6(self):
+        raise NotImplementedError('todo')
+
+    def listenOnUnix(self):
+        raise NotImplementedError('todo')
+
+
+
+
 
 IDENTITYLENGTH = 20
 
