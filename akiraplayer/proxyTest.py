@@ -28,6 +28,9 @@ class ProxyAttributeTest(unittest.TestCase):
         self.proxy.a += 4
         self.assertEquals(self.proxy.a, 7)
 
+    def test_hash(self):
+        self.assertEquals(hash(self.proxy), hash(self.object))
+
 
 class _CallProxy(proxy.Proxy):
 
@@ -62,7 +65,6 @@ class MethodCallTest(unittest.TestCase):
     def test_getSomething(self):
         self.assertIs(self.proxy.x, self.proxy)
         self.assertLastCalled('__getattribute__', 'x')
-
 
 
 if __name__ == '__main__':
