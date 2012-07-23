@@ -6,6 +6,20 @@ import socket
 import pickle
 
 from Process import thisProcess
+from Listener import ConnectionPossibility
+
+class ProcessTest(unittest.TestCase):
+
+    def test_equal(self):
+        p1 = Process.Process('xx', 1,1,1)
+        p2 = Process.Process('xx', 1,1,1)
+        self.assertEquals(p1, p2)
+
+    def test_notEqual(self):
+        p1 = Process.Process('xx', 1,1,1)
+        p2 = Process.Process('xxa', 1,1,1)
+        self.assertNotEquals(p1, p2)
+        self.assertNotEquals(p1, None)
 
 value = None
 
@@ -17,12 +31,44 @@ def setValue(aValue):
 class MockListener1(object):
     
     listening = False
+    p = 'not set'
+    
     def listen(self):
         self.listening = True
 
     closed = False
     def close(self):
         self.closed = True
+
+    def fromProcess(self, p):
+        self.p = p
+
+    def getConnectionPossibilities(self):
+        return []
+
+
+
+def loadProcess(id, process, args = (), kw = {}):
+
+    return process(*args, **kw)
+
+class MockProcess1(Process._ThisProcess):
+    
+    def getLoadFunction(self):
+        return loadProcess
+
+class ProcessClassAfterUnpickling1(Process.Process):
+    pass
+
+class MockProcess2(Process._ThisProcess):
+    ProcessClassAfterUnpickling = ProcessClassAfterUnpickling1
+
+class MockListener2(MockListener1):
+
+    def getConnectionPossibilities(self):
+        return [(setValue, (5,))]
+
+dumpLoad = lambda o: pickle.loads(pickle.dumps(o))
 
 class ThisProcessTest(unittest.TestCase):
 
@@ -39,7 +85,7 @@ class ThisProcessTest(unittest.TestCase):
         self.assertEquals(value, '12345')
 
     def test_thisProcess_is_always_itself_here(self):
-        self.assertIs(pickle.loads(pickle.dumps(thisProcess)), thisProcess)
+        self.assertIs(dumpLoad(thisProcess), thisProcess)
 
     def test_added_listener_will_listen(self):
         listener = MockListener1()
@@ -49,6 +95,71 @@ class ThisProcessTest(unittest.TestCase):
         thisProcess.removeListener(listener)
         self.assertTrue(listener.closed)
 
+    def test_new_thisProcess_does_not_infect_global_state(self):
+        p = type(thisProcess)(thisProcess.identityString)
+        self.assertNotEquals(p, Process.thisProcess)
+
+    def test_process_is_set_to_listener(self):
+        listener = MockListener1()
+        thisProcess.addListener(listener)
+        self.assertIs(listener.p, thisProcess)
+
+    def test_dump_and_load_with_listener(self):
+        setValue(3)
+        p1 = MockProcess1('xx')
+        l1 = MockListener2()
+        p1.addListener(l1)
+        p2 = dumpLoad(p1)
+        self.assertEquals(p2._connectionPossibilities, [(setValue, (5,))])
+
+    def test_class_after_load(self):
+        self.assertNotEquals(
+            dumpLoad(MockProcess2('33')).ProcessClassAfterUnpickling,
+            MockProcess2('33').ProcessClassAfterUnpickling)
+
+class MockConnection1(object):
+    _to = None
+    _from = None
+    def isMockConnection(self):
+        return True
+
+    def fromProcess(self, _from):
+        self._from = _from
+
+    def toProcess(self, _from):
+        self._to = _from
+
+    def isProcess(self):
+        return True
+
+class ProcessInOtherProcessTest(unittest.TestCase):
+
+    def setUp(self):
+        self.p = Process.ProcessInOtherProcess('', 1,1,1)
+
+    def test_establishConnectionFails(self):
+        self.p.addConnectionPossibility(ConnectionPossibility(setValue, (1,)))
+        c = self.p.newConnection()
+        self.assertEquals(c, None)
+        self.assertEquals(value, 1)
+        self.p.addConnectionPossibility(ConnectionPossibility(setValue, (2,)))
+        self.p.addConnectionPossibility(ConnectionPossibility(setValue, (3,)))
+        c = self.p.newConnection()
+        self.assertEquals(c, None)
+        self.assertEquals(value, 3)
+
+    def test_establishConnectionWorks(self):
+        self.p.addConnectionPossibility(ConnectionPossibility(setValue, (1,)))
+        self.p.addConnectionPossibility(ConnectionPossibility(MockConnection1))
+        c = self.p.newConnection()
+        self.assertTrue(c.isMockConnection())
+
+    def test_connection_knows_about_endpoints(self):
+        self.p.addConnectionPossibility(ConnectionPossibility(MockConnection1))
+        c = self.p.newConnection()
+        self.assertEquals(c._from, thisProcess)
+        self.assertEquals(c._to, self.p)
+        
 
 if __name__ == '__main__':
     unittest.main(exit = False)

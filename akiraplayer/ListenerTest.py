@@ -5,6 +5,8 @@ import socket
 
 import Listener
 
+from Listener import ConnectionPossibility
+
 class ListenerTest(unittest.TestCase):
 
     def setUp(self):
@@ -38,7 +40,7 @@ class CreateConnectionsTest(unittest.TestCase):
         self.listener.listen()
 
     def getConnection(self):
-        return apply(*self.listener.getConnectionPossibilities()[0])
+        return self.listener.getConnectionPossibilities()[0]()
 
     
     def test_create_connection(self):
@@ -87,8 +89,8 @@ class IPv4Test1(unittest.TestCase):
         self.listener.listen()
 
     def test_getAddress(self):
-        p = self.listener.getConnectionPossibilities()
-        function, args = p[0]
+        p = self.listener.getConnectionPossibilities()[0]
+        function, args = p.function, p.args
         self.assertIn(self.address, args)
 
     def test_socket_listens(self):
@@ -99,6 +101,24 @@ class IPv4Test1(unittest.TestCase):
         s.close()
         self.assertTrue(self.listener.isListening())
         
+def g(a, b = 1):
+    return a, b
+
+class ConnectionPossibilityTest(unittest.TestCase):
+
+    def setUp(self):
+        self.c = ConnectionPossibility(g, (1,), {'b': 2})
+
+    def test_reduce(self):
+        import pickle
+        c = self.c
+        c2 = pickle.loads(pickle.dumps(c))
+        self.assertEquals(c2.args, c.args)
+        self.assertEquals(c2.kw, c.kw)
+        self.assertEquals(c2.function, c.function)
+
+    def test_call(self):
+        self.assertEquals(self.c(), (1, 2))
 
 if __name__ == '__main__':
     unittest.main(exit = False, verbosity = 1)

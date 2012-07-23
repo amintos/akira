@@ -21,6 +21,9 @@ class NoProcess(object):
     def isProcess():
         return False
 
+    def __nonzero__(self):
+        return False
+
 class BaseConnection(object):
     
     _connected = False
@@ -77,6 +80,27 @@ class BaseConnection(object):
             self._toProcess = process
         return self._toProcess
 
+    def __str__(self):
+        s = '%s' % type(self).__name__
+        if self.fromProcess():
+            s += ' from %s' % (self.fromProcess(),)
+        if self.toProcess():
+            s += ' to %s' % (self.toProcess(),)
+            
+
+class ConnectionPossibility(object):
+    def __init__(self, function, args = (), kw = {}):
+        self.function = function
+        self.args = args
+        self.kw = kw
+
+    def __reduce__(self):
+        return self.__class__, (self.function, self.args, self.kw)
+
+    def __call__(self):
+        return self.function(*self.args, **self.kw)
+
+
 class BrokenConnection(BaseConnection):
     
     def call(*args):
@@ -120,7 +144,7 @@ class Listener(BaseConnection):
         try:
             connection = self.listener.accept()
             self.addConnection(ClientConnection(connection))
-        except IOError:
+        except (IOError, EOFError):
             # do nothing: connection broken
             pass
         except AuthenticationError:
@@ -137,7 +161,8 @@ class Listener(BaseConnection):
         return map(self.getConnectClient, self.addresses)
 
     def getConnectClient(self, address):
-        return (connectClient, (address, self.family, self.authkey))
+        return ConnectionPossibility(connectClient,
+                                     (address, self.family, self.authkey))
     
     def close(self):
         BaseConnection.close(self)
@@ -203,7 +228,8 @@ if socket.has_ipv6:
             return ['::1', hostName] + ipv6
 
         def getConnectClient(self, address):
-            return (connectClientIPv6, (address, self.authkey))
+            return ConnectionPossibility(connectClientIPv6,
+                                         (address, self.authkey))
 
 
     ## copied and adapted from multiprocessing.connection
