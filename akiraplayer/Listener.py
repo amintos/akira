@@ -2,6 +2,7 @@
 import traceback
 import thread
 import socket
+import time
 import os
 
 from thread import start_new as thread_start_new
@@ -184,12 +185,6 @@ class Listener(BaseConnection):
             self.acceptedConnection(clientConnection)
 
     def acceptConnection(self):
-        l = [self.fileno()]
-        rd, wd, xx = select.select(l, l, l)
-        if rd or wd or xx:
-            return self.listener.accept()
-
-    def fileno(self):
         raise NotImplementedError('this must be implemented in subclasses')
 
     def stopListening(self):
@@ -227,6 +222,7 @@ class IPListener(Listener):
     def __init__(self, address, family):
         Listener.__init__(self, family)
         self.__address = address
+        self.lock = thread.allocate_lock()
 
     def getListenAddress(self):
         return self.__address
@@ -243,8 +239,23 @@ class IPListener(Listener):
     def getHostNames():
         raise NotImplementedError('to implement in subclasses')
 
+    def acceptConnection(self):
+        while 1:
+            with self.lock:
+                ## todo: I do not understand why a lock should make it more
+                ## threadsave. but it does.
+                l = [self.fileno()]
+                rd, wd, xx = select.select(l, l, l, 0)
+                if rd or wd or xx:
+                    return self.listener.accept()
+            time.sleep(0.001)
+
     def fileno(self):
          return self.listener._listener._socket.fileno()
+
+    def close(self):
+        with self.lock:
+            Listener.close(self)
 
 
 def removeDuplicates(aList):
@@ -333,9 +344,9 @@ if has_pipe:
         def __init__(self):
             Listener.__init__(self, 'AF_PIPE')
 
-        def fileno(self):
-             return self.listener._listener._socket.fileno()
-
+##        def acceptConnection(self):
+##            raise IOError()
+##            return self.listener.accept()
 
 class R(object):
     def __init__(self, f, *args):

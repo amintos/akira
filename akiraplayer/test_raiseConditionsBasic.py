@@ -34,15 +34,20 @@ class CreateConnectionsPrimitiveTest(unittest.TestCase):
         self.accepts_end = 0
         self.socketError = False
         thread_start_new(self.acceptThread, ())
+        self.lock = thread.allocate_lock()
 
     def acceptThread(self):
         while self.open:
             self.accepts_start += 1
             try:
-                l = [self.listener._listener._socket.fileno()]
-                rd, wd, xx = select.select(l, l, l)
-                if rd or xx:
-                    self.connection1 = self.listener.accept()
+                while 1:
+                    with self.lock:
+                        l = [self.listener._listener._socket.fileno()]
+                        rd, wd, xx = select.select(l, l, l, 0)
+                        if rd or xx or wd:
+                            self.connection1 = self.listener.accept()
+                            break
+                    time.sleep(0.001)
             except socket.error:
                 self.socketError = True
                 break
@@ -51,6 +56,7 @@ class CreateConnectionsPrimitiveTest(unittest.TestCase):
                 break
             finally:
                 self.accepts_end += 1
+            time.sleep(TIMEOUT)
 
     def test_accepted_once(self):
         self.connection2 = multiprocessing.connection.Client(self.listener.address)
@@ -65,9 +71,13 @@ class CreateConnectionsPrimitiveTest(unittest.TestCase):
         
     def test_thread_is_closed_after_connection(self):
         self.connection2 = multiprocessing.connection.Client(self.listener.address)
-        self.listener.close()
-        time.sleep(TIMEOUT)
-        self.assertEquals(self.accepts_end, 2)
+        with self.lock:
+            self.listener.close()
+        for i in range(int(5 / TIMEOUT)):
+            time.sleep(TIMEOUT)
+            if self.accepts_end != 0:
+                break
+        self.assertEquals(self.accepts_end, 1)
         self.assertTrue(self.socketError)
 
     def test_thread_is_closed_after_connection_fast_close(self):
