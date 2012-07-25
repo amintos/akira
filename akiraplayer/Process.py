@@ -3,8 +3,14 @@ import time
 import thread
 import os
 
+import Listener
+from setConnectionEndpointsAlgorithm import setConnectionEndpoints
+
 _cachedProcesses = {}
 _cachedProcessesLock = thread.allocate_lock()
+
+class ProcessCannotConnect(Listener.ConnectionBroken):
+    pass
 
 def getProcess(identityString, ProcessClass, args = (), kw = {}):
     assert isinstance(identityString, basestring), 'The identity must be a string'
@@ -38,7 +44,7 @@ class Process(object):
                   self.creationTime),)
 
     def getLoadFunction(self):
-        '=> function to use to load process after transfer over connections'
+        '=> function to use to load process after transfer over aConnections'
         return getProcess
 
     def __eq__(self, other):
@@ -72,6 +78,8 @@ class R(object):
 
 class ProcessInOtherProcess(Process):
 
+    callAttempts = 100
+
     def __init__(self, *args):
         Process.__init__(self, *args)
         self._connectionPossibilities = []
@@ -79,6 +87,12 @@ class ProcessInOtherProcess(Process):
 
     def addConnectionPossibility(self, possibility):
         self._connectionPossibilities.append(possibility)
+
+    def hasConnection(self, aConnection):
+        return aConnection in self._connections
+
+    def hasConnections(self):
+        return bool(self._connections)
 
     def addConnection(self, aConnection):
         import Process
@@ -88,11 +102,42 @@ class ProcessInOtherProcess(Process):
 
     def newConnection(self):
         for possibility in self._connectionPossibilities:
-            connection = possibility()
-            if connection is not None:
-                self.addConnection(connection)
-                return connection
+            aConnection = possibility()
+            if aConnection is not None:
+                self.addConnection(aConnection)
+                return aConnection
         return None
+
+    def call(self, function, args, kw = {}):
+        for i in xrange(self.callAttempts):
+            aConnection = self.chooseConnection()
+            try:
+                aConnection.call(function, args, kw)
+                return
+            except Listener.ConnectionBroken:
+                self.removeConnection(aConnection)
+        raise ProcessCannotConnect('tried to connect %i times but failed' % \
+                                   self.callAttempts)
+
+    def removeConnection(self, aConnection):
+        for i, ownConnection in reversed(list(enumerate(self._connections))):
+            if ownConnection == aConnection:
+                self._connections.pop(i)
+                self.aConnectionRemoved(ownConnection)
+
+    def aConnectionRemoved(self, aConnection):
+        aConnection.close()
+        
+    def chooseConnection(self):
+        'this raises'
+        ## todo: better algorithm for aConnection attempts
+        if not self.hasConnections():
+            aConnection = self.newConnection()
+        else:
+            aConnection = self._connections[0]
+        if aConnection is None:
+            raise ProcessCannotConnect('all connection possibilities failed')
+        return aConnection
 
 def addConnectionPossibilities(process, possibilities):
     for possibility in possibilities:
@@ -115,6 +160,7 @@ class _ThisProcess(Process):
         if aListener not in self._listeners:
             self._listeners.append(aListener)
             self.addedListner(aListener)
+        return aListener
 
     def addConnectionPossibility(self, possibility):
         pass
@@ -148,18 +194,37 @@ class _ThisProcess(Process):
         listener.close()
 
     def listenOnIPv4(self):
-        raise NotImplementedError('todo')
+        if Listener.has_ipv4:
+            return self.addListener(Listener.IPv4Listener())
 
     def listenOnPipe(self):
-        raise NotImplementedError('todo')
+        if Listener.has_pipe:
+            return self.addListener(Listener.PipeListener())
 
     def listenOnIPv6(self):
-        raise NotImplementedError('todo')
+        if Listener.has_ipv6:
+            return self.addListener(Listener.IPv6Listener())
 
     def listenOnUnix(self):
-        raise NotImplementedError('todo')
+        if Listener.has_unix:
+            return self.addListener(Listener.UnixListener())
 
+    def listenWhereYouCan(self):
+        ## order is important: put fastest first
+        self.listenOnPipe()
+        self.listenOnUnix()
+        self.listenOnIPv6()
+        self.listenOnIPv4()
 
+    def acceptedConnection(self, aConnection):
+        aConnection.fromProcess(self)
+        setConnectionEndpoints(aConnection)
+
+    def hasConnection(self, aConnection):
+        return True
+
+    def addConnection(self, aConnection):
+        pass
 
 IDENTITYLENGTH = 20
 
@@ -167,5 +232,5 @@ _id = os.urandom(IDENTITYLENGTH)
 thisProcess = getProcess(_id, _ThisProcess, (_id,))
 del _id
 
-__all__ = ['getProcess', 'Process', 'thisProcess', 'IDENTITYLENGTH',
+__all__ = ['getProcess', 'Process', 'thisProcess', 'ProcessCannotConnect'
            'ProcessInOtherProcess']
