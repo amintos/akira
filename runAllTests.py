@@ -8,12 +8,16 @@ try:
     for dirPath, dirNames, fileNames in os.walk(os.path.abspath('.')):
         os.chdir(dirPath)
         for fileName in fileNames:
-            if fileName.lower().endswith('test.py'):
+            if fileName.lower().startswith('test_'):
                 p = subprocess.Popen([sys.executable, fileName],
                                      stdin = subprocess.PIPE,
                                      stderr = subprocess.PIPE,
                                      stdout = subprocess.PIPE)
-                stdout, stderr = p.communicate()
+                try:
+                    stdout, stderr = p.communicate()
+                except KeyboardInterrupt:
+                    print 'Interrupted:', fileName
+                    raise 
                 stderr =  stderr.rstrip()
                 
                 if not stderr[-10:].lower().endswith('ok'):
