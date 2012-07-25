@@ -6,7 +6,7 @@ import socket
 import pickle
 
 from Process import thisProcess
-from Listener import ConnectionPossibility
+from Listener import ConnectionPossibility, BrokenConnection
 
 class ProcessTest(unittest.TestCase):
 
@@ -160,6 +160,40 @@ class ProcessInOtherProcessTest(unittest.TestCase):
         self.assertEquals(c._from, thisProcess)
         self.assertEquals(c._to, self.p)
         
+    def test_no_connection_can_be_established(self):
+        self.assertRaises(Process.ProcessCannotConnect, \
+                          lambda: self.p.call(setValue, ('x',)))
+
+    def test_no_connection_can_be_established2(self):
+        cp = ConnectionPossibility(BrokenConnection, ())
+        self.p.addConnectionPossibility(cp)
+        self.assertRaises(Process.ProcessCannotConnect, \
+                          lambda: self.p.call(setValue, ('x',)))
+
+class setConnectionEndpointsAlgorithmTest(unittest.TestCase):
+
+    def setUp(self):
+        if not thisProcess.getConnectionPossibilities():
+            thisProcess.listenOnIPv4()
+
+    def test_connection_toProcess_is_set_after_connecting(self):
+        c = thisProcess.getConnectionPossibilities()[0]()
+        for i in range(100):
+            time.sleep(0.001)
+            if c.toProcess().isProcess():
+                break
+        self.assertEquals(c.toProcess(), thisProcess)
+        
+    def test_connection_fromProcess_is_set_after_connecting(self):
+        c = thisProcess.getConnectionPossibilities()[0]()
+        for i in range(100):
+            time.sleep(0.001)
+            if c.fromProcess().isProcess():
+                break
+        self.assertEquals(c.fromProcess(), thisProcess)
+        
+    def test_on_dedicated_process(self):
+        self.fail()
 
 if __name__ == '__main__':
     unittest.main(exit = False)

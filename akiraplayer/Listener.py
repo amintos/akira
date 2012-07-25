@@ -4,14 +4,31 @@ import thread
 import socket
 import os
 
+from thread import start_new as thread_start_new
+
 from multiprocessing.connection import AuthenticationError, Client
 from multiprocessing.connection import deliver_challenge, answer_challenge
 from multiprocessing.connection import families as connection_families
 
+from TopConnection import topConnection
+import TopConnection
 
+import select
+
+has_ipv4 = hasattr(socket, 'AF_INET')
 has_ipv6 = socket.has_ipv6
 has_unix = 'AF_UNIX' in connection_families
 has_pipe = 'AF_PIPE' in connection_families
+
+class ConnectionMustBeTop(Exception):
+    '''The connection must be the top connection
+
+do something like this:
+with connection:
+    # here is where the error occurs
+    ...
+
+'''
 
 class ConnectionBroken(EOFError):
     pass
@@ -21,6 +38,9 @@ class NoProcess(object):
     def isProcess():
         return False
 
+    def acceptedConnection(self, connection):
+        pass
+
     def __nonzero__(self):
         return False
 
@@ -28,13 +48,13 @@ class BaseConnection(object):
     
     _connected = False
     _threadId = None
-    _fromProcess = None
-    _toProcess = None
+    _fromProcess = NoProcess()
+    _toProcess = NoProcess()
 
     def listen(self):
         self.startListening()
         self._threadId = 'running'
-        self._threadId = thread.start_new(self.listenForConnections, ())
+        self._threadId = thread_start_new(self.listenForConnections, ())
 
     def isListening(self):
         return self._threadId is not None
@@ -58,7 +78,7 @@ class BaseConnection(object):
     def isConnected(self):
         return self._connected
 
-    def call(self, aFunction, args, kw):
+    def call(self, aFunction, args, kw = {}):
         raise NotImplementedError('todo')
 
     def close(self):
@@ -86,7 +106,17 @@ class BaseConnection(object):
             s += ' from %s' % (self.fromProcess(),)
         if self.toProcess():
             s += ' to %s' % (self.toProcess(),)
+
+    def __enter__(self):
+        topConnection.push(self)
+
+    def __exit__(self, *args):
+        assert topConnection.pop() is self, 'Connection stack should be consistent.'
             
+    def __reduce__(self):
+        if TopConnection.top(None) != self:
+            raise ConnectionMustBeTop('to be serialized.')
+        return TopConnection.top, ()
 
 class ConnectionPossibility(object):
     def __init__(self, function, args = (), kw = {}):
@@ -103,7 +133,7 @@ class ConnectionPossibility(object):
 
 class BrokenConnection(BaseConnection):
     
-    def call(*args):
+    def call(*args, **kw):
         raise ConnectionBroken('this connection was never and is no more')
 
     def accept(self):
@@ -126,6 +156,7 @@ class Listener(BaseConnection):
                 'family %r must be one of %r' % (family, self.families)
         self.family = family
         self.authkey = os.urandom(CHALLENGELENGTH)
+        self.listener = None
 
     def getListenAddress(self):
         if self.family and self.family.startswith('AF_INET'):
@@ -138,17 +169,28 @@ class Listener(BaseConnection):
                              authkey = self.authkey)
 
     def startListening(self):
+        assert self.listener is None
         self.listener = self.getListener()
 
     def accept(self):
         try:
-            connection = self.listener.accept()
-            self.addConnection(ClientConnection(connection))
-        except (IOError, EOFError):
-            # do nothing: connection broken
+            with self:
+                connection = self.acceptConnection()
+        except IOError:
+            ## connection broken
             pass
-        except AuthenticationError:
-            traceback.print_exc()
+        else:
+            clientConnection = ClientConnection(connection)
+            self.acceptedConnection(clientConnection)
+
+    def acceptConnection(self):
+        l = [self.fileno()]
+        rd, wd, xx = select.select(l, l, l)
+        if rd or wd or xx:
+            return self.listener.accept()
+
+    def fileno(self):
+        raise NotImplementedError('this must be implemented in subclasses')
 
     def stopListening(self):
         self.listener.close()
@@ -167,9 +209,9 @@ class Listener(BaseConnection):
     def close(self):
         BaseConnection.close(self)
         self.listener.close()
-
-    def addConnection(self, connection):
-        pass
+        
+    def acceptedConnection(self, connection):
+        self.fromProcess().acceptedConnection(connection)
 
 def connectClient(*args):
     return ClientConnection(Client(*args))
@@ -201,6 +243,17 @@ class IPListener(Listener):
     def getHostNames():
         raise NotImplementedError('to implement in subclasses')
 
+    def fileno(self):
+         return self.listener._listener._socket.fileno()
+
+
+def removeDuplicates(aList):
+    noDuplicates = []
+    for element in aList:
+        if not element in noDuplicates:
+            noDuplicates.append(element)
+    return noDuplicates
+
 class IPv4Listener(IPListener):
 
     ALLADDRESSES = ['0.0.0.0']
@@ -211,7 +264,7 @@ class IPv4Listener(IPListener):
     @staticmethod
     def getHostNames():
         hostName, ipv6, ipv4 = socket.gethostbyname_ex(socket.gethostname())
-        return ['localhost', hostName] + ipv4
+        return removeDuplicates(['127.0.0.1', hostName] + ipv4)
 
 if socket.has_ipv6:
     class IPv6Listener(IPListener):
@@ -225,7 +278,7 @@ if socket.has_ipv6:
         @staticmethod
         def getHostNames():
             hostName, ipv6, ipv4 = socket.gethostbyname_ex(socket.gethostname())
-            return ['::1', hostName] + ipv6
+            return removeDuplicates(['::1', hostName] + ipv6)
 
         def getConnectClient(self, address):
             return ConnectionPossibility(connectClientIPv6,
@@ -280,6 +333,10 @@ if has_pipe:
         def __init__(self):
             Listener.__init__(self, 'AF_PIPE')
 
+        def fileno(self):
+             return self.listener._listener._socket.fileno()
+
+
 class R(object):
     def __init__(self, f, *args):
         self.ret = (f, args)
@@ -302,15 +359,21 @@ class ClientConnection(BaseConnection):
 
     def accept(self):
         try:
-            obj = self._connection.recv()
+            with self:
+                obj = self._connection.recv()
         except (EOFError, IOError):
             self.close()
         except:
             ## todo: send the error back to where it came from
             traceback.print_exc()
             
-    def call(self, aFunction, args, kw):
-        self.send(R(callFunction, aFunction, args, kw))
+    def call(self, aFunction, args, kw = {}):
+        with self:
+            self.send(R(callFunction, aFunction, args, kw))
+
+    def close(self):
+        BaseConnection.close(self)
+        self._connection.close()
 
 
 

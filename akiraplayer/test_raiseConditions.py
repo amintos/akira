@@ -33,79 +33,9 @@ class SomeProcess(object):
     def isProcess():
         return True
 
-class X(object):
-    @staticmethod
-    def close():
-        pass
+TIMEOUT = 0.01
 
-class CreateConnectionsPrimitiveTest(unittest.TestCase):
-
-    def setUp(self):
-        self.connection1 = X
-        self.connection2 = X
-        self.listener = multiprocessing.connection.Listener(('127.0.0.1', 0), 'AF_INET')
-        self.open = True
-        self.accepts_start = 0
-        self.accepts_end = 0
-        self.socketError = False
-        thread_start_new(self.acceptThread, ())
-
-    def acceptThread(self):
-        while self.open:
-            self.accepts_start += 1
-            try:
-                self.connection1 = self.listener.accept()
-            except socket.error:
-                self.socketError = True
-                break
-            except:
-                traceback.print_exc()
-                break
-            finally:
-                self.accepts_end += 1
-            time.sleep(0.1)
-
-    def test_accepted_once(self):
-        self.connection2 = multiprocessing.connection.Client(self.listener.address)
-        time.sleep(1)
-        self.assertEquals(self.accepts_end, 1)
-
-    def test_thread_is_closed(self):
-        self.listener.close()
-        time.sleep(1)
-        self.assertEquals(self.accepts_end, 1)
-        self.assertTrue(self.socketError)
-        
-    def test_thread_is_closed_after_connection(self):
-        self.connection2 = multiprocessing.connection.Client(self.listener.address)
-        self.listener.close()
-        time.sleep(1)
-        self.assertEquals(self.accepts_end, 2)
-        self.assertTrue(self.socketError)
-
-    def test_thread_is_closed_after_connection_fast_close(self):
-        self.connection2 = multiprocessing.connection.Client(self.listener.address)
-        time.sleep(1)
-        self.listener.close()
-        self.assertEquals(self.accepts_end, 2)
-        self.assertTrue(self.socketError)
-
-    def test_close_allconnections_before_listener(self):
-        self.connection2 = multiprocessing.connection.Client(self.listener.address)
-        time.sleep(1)
-        self.connection1.close()
-        self.connection2.close()
-        self.listener.close()
-        self.assertEquals(self.accepts_end, 2)
-        self.assertTrue(self.socketError)
-
-    def tearDown(self):
-        self.connection1.close()
-        self.connection2.close()
-        self.listener.close()
-        self.open = False
-
-class CreateConnectionsTest(object):#unittest.TestCase):
+class CreateConnectionsTest(unittest.TestCase):
 
     ListenerClass = Listener.IPv4Listener
 
@@ -135,13 +65,13 @@ class CreateConnectionsTest(object):#unittest.TestCase):
     
     def test_create_connection_success(self):
         connection = self.getConnection()
-        time.sleep(1)
+        time.sleep(TIMEOUT)
         SomeProcess._connections[0].close()
         connection.close()
         self.listener.close()
-        time.sleep(1)
+        time.sleep(TIMEOUT)
         self.assertEquals(self.accepts_started, self.accepts_ended)
-        time.sleep(1)
+        time.sleep(TIMEOUT)
 
     def test_create_connection_closed_patched(self):
         close_called = []
@@ -151,32 +81,21 @@ class CreateConnectionsTest(object):#unittest.TestCase):
         _close = self.listener.listener._listener.close
         self.listener.listener._listener.close = close
         connection = self.getConnection()
-        time.sleep(1)
+        time.sleep(TIMEOUT)
         SomeProcess._connections[0].close()
         connection.close()
         self.listener.close()
-        time.sleep(1)
-        self.assertEquals(close_called, [1])
-        time.sleep(1)
+        time.sleep(TIMEOUT)
+        self.assertNotEquals(close_called, [])
 
     def test_create_connection_success2(self):
         connection = self.getConnection()
         SomeProcess._connections[0].close()
         connection.close()
         self.listener.close()
-        time.sleep(1)
+        time.sleep(TIMEOUT)
         self.assertEquals(self.accepts_started, self.accepts_ended)
-        time.sleep(1)
-
-##    def test_send_command_through_connection(self):
-##        connection = self.getConnection()
-##        thread.start_new(connection.call, (setValue, ('valueSet',), {}))
-##        i = 0
-##        for i in range(100):
-##            if value == 'valueSet':
-##                break
-##            time.sleep(0.001)
-##        self.assertEquals(value, 'valueSet')
+        time.sleep(TIMEOUT)
 
     def tearDown(self):
         self.listener.close()
@@ -185,20 +104,21 @@ class CreateConnectionsTest(object):#unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main(exit = False, verbosity = 2)
-    import sys
-    time.sleep(0.1) # wait for threads to die
-    print 'frames:', len(sys._current_frames().items())
-    print 'connections:', len(SomeProcess._connections)
-    for connection in SomeProcess._connections:
-        connection.close()
-    time.sleep(5) # wait for threads to die
-    for k in sorted(sys._current_frames()):
-        f = sys._current_frames()[k]
-        
-        if k in startedThreads:
-            print f.f_code.co_filename,
-            print k, f.f_code.co_firstlineno
-        else:
-            print
-    print 'frames:', len(sys._current_frames().items())
+    unittest.main(exit = False, verbosity = 1)
+    if False:
+        import sys
+        time.sleep(0.1) # wait for threads to die
+        print 'frames:', len(sys._current_frames().items())
+        print 'connections:', len(SomeProcess._connections)
+        for connection in SomeProcess._connections:
+            connection.close()
+        time.sleep(5) # wait for threads to die
+        for k in sorted(sys._current_frames()):
+            f = sys._current_frames()[k]
+            
+            if k in startedThreads:
+                print f.f_code.co_filename,
+                print k, f.f_code.co_firstlineno
+            else:
+                print
+        print 'frames:', len(sys._current_frames().items())
