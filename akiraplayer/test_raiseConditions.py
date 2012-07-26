@@ -35,6 +35,10 @@ class SomeProcess(object):
 
 TIMEOUT = 0.01
 
+def skip(function):
+    return function
+    return unittest.skip("")(function)
+
 class CreateConnectionsTestIpv4(unittest.TestCase):
 
     ListenerClass = Listener.IPv4Listener
@@ -64,16 +68,7 @@ class CreateConnectionsTestIpv4(unittest.TestCase):
         self._connections.append(conn)
         return conn
     
-    def test_create_connection_success(self):
-        connection = self.getConnection()
-        time.sleep(TIMEOUT)
-        SomeProcess._connections.pop().close()
-        connection.close()
-        self.listener.close()
-        time.sleep(TIMEOUT)
-        self.assertEquals(self.accepts_started, self.accepts_ended)
-        time.sleep(TIMEOUT)
-
+    @skip
     def test_create_connection_closed_patched(self):
         close_called = []
         def close():
@@ -89,6 +84,17 @@ class CreateConnectionsTestIpv4(unittest.TestCase):
         time.sleep(TIMEOUT)
         self.assertNotEquals(close_called, [])
 
+    def test_create_connection_success(self):
+        connection = self.getConnection()
+        time.sleep(TIMEOUT)
+        SomeProcess._connections.pop().close()
+        connection.close()
+        self.listener.close()
+        time.sleep(TIMEOUT)
+        self.assertEquals(self.accepts_started, self.accepts_ended)
+        time.sleep(TIMEOUT)
+
+    @skip
     def test_create_connection_success2(self):
         connection = self.getConnection()
         connection.close()
@@ -108,7 +114,7 @@ if Listener.has_ipv6:
     class CreateConnectionsTestIpv6(CreateConnectionsTestIpv4):
         ListenerClass = Listener.IPv6Listener
 
-if Listener.has_pipe:
+if Listener.has_pipe and 1:
     class CreateConnectionsTestPipe(CreateConnectionsTestIpv4):
         ListenerClass = Listener.PipeListener
 
@@ -116,6 +122,8 @@ if Listener.has_unix:
     class CreateConnectionsTestUnix(CreateConnectionsTestIpv4):
         ListenerClass = Listener.UnixListener
 
+
+##del CreateConnectionsTestIpv6, CreateConnectionsTestIpv4
 
 if __name__ == '__main__':
     unittest.main(exit = False, verbosity = 1)

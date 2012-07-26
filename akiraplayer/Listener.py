@@ -2,8 +2,10 @@
 import traceback
 import thread
 import socket
+import errno
 import time
 import os
+
 
 from thread import start_new as thread_start_new
 
@@ -16,7 +18,7 @@ import TopConnection
 
 import select
 
-pipes_are_supported = False
+pipes_are_supported = 1
 has_ipv4 = hasattr(socket, 'AF_INET')
 has_ipv6 = socket.has_ipv6
 has_unix = 'AF_UNIX' in connection_families
@@ -108,6 +110,7 @@ class BaseConnection(object):
             s += ' from %s' % (self.fromProcess(),)
         if self.toProcess():
             s += ' to %s' % (self.toProcess(),)
+        return s
 
     def __enter__(self):
         topConnection.push(self)
@@ -190,12 +193,15 @@ class Listener(BaseConnection):
         try:
             with self:
                 connection = self.acceptConnection()
-        except IOError:
+        except (IOError, EOFError):
             ## connection broken
             pass
         else:
-            clientConnection = ClientConnection(connection)
-            self.acceptedConnection(clientConnection)
+            connection = self.wrapAcceptedConnection(connection)
+            self.acceptedConnection(connection)
+
+    def wrapAcceptedConnection(self, connection):
+        return ClientConnection(connection)
 
     def acceptConnection(self):
         raise NotImplementedError('this must be implemented in subclasses')
@@ -248,20 +254,26 @@ class IPListener(Listener):
             return [(hostName, port) for hostName in self.getHostNames()]
         return [address]
 
+    def wrapAcceptedConnection(self, connection):
+        return SocketConnection(connection)
+
     @staticmethod
     def getHostNames():
         raise NotImplementedError('to implement in subclasses')
 
     def acceptConnection(self):
-        while 1:
+        ## todo: I do not understand why a lock should make it more
+        ## threadsave. but it does.
+        l = [self.fileno()]
+        try:
+            rl, wl, xl = select.select(l, l, l)
+        except select.error as err:
+            raise IOError('select errors - listener closed')
+        if rl or wl or xl:
             with self.lock:
-                ## todo: I do not understand why a lock should make it more
-                ## threadsave. but it does.
-                l = [self.fileno()]
-                rd, wd, xx = select.select(l, l, l, 0)
-                if rd or wd or xx:
-                    return self.listener.accept()
-            time.sleep(0.001)
+                return self.listener.accept()
+        else:
+            raise IOError('nothing was read')
 
     def fileno(self):
          return self.listener._listener._socket.fileno()
@@ -270,6 +282,12 @@ class IPListener(Listener):
         with self.lock:
             Listener.close(self)
 
+    def getConnectClient(self, address):
+        return ConnectionPossibility(connectClientSocket,
+                                     (address, self.family, self.authkey))
+
+def connectClientSocket(*args):
+    return SocketConnection(Client(*args))
 
 def removeDuplicates(aList):
     noDuplicates = []
@@ -346,26 +364,69 @@ if socket.has_ipv6:
     ## end of copy
 
     def connectClientIPv6(address, authkey):
-        return ClientConnection(SocketClientv6(address, authkey))
+        return SocketConnection(SocketClientv6(address, authkey))
 
 else:
     def connectClientIPv6(*args):
         return BrokenConnection()
 
 if has_pipe:
+    ERROR_BAD_PIPE = 230, 'The pipe state is invalid.'
+    ERROR_PIPE_BUSY = 231, 'All pipe instances are busy.'
+    ERROR_NO_DATA = 232, 'The pipe is being closed.'
+    ERROR_PIPE_NOT_CONNECTED = 233, 'No process is on the other end of the pipe.'
+    ERROR_FILE_NOT_FOUND = 2, 'The system cannot find the file specified.'
+
     class PipeListener(Listener):
+        ignorePipeErrorsWhenClosing = [ERROR_BAD_PIPE, ERROR_PIPE_BUSY, \
+                                       ERROR_NO_DATA, ERROR_FILE_NOT_FOUND, \
+                                       ERROR_PIPE_NOT_CONNECTED, ]
+        ignorePipeErrorsWhenClosing = [t[0] for t in ignorePipeErrorsWhenClosing]
         def __init__(self):
             Listener.__init__(self, 'AF_PIPE')
-            self.lock = thread.allocate_lock()
+            self.establish_connection_to_close_lock = thread.allocate_lock()
 
         def acceptConnection(self):
-##            raise IOError()
-##            with self.lock:
+            try:
                 return self.listener.accept()
+            except WindowsError as e:
+                if e.args[0] == 6:
+                    ## invalid handle
+                    self.softClose()
+                    raise IOError('no connection was accepted')
+                raise
 
-        def close(self):
-##            with self.lock:
-                Listener.close(self)
+        def stopListening(self):
+            self.establish_connection_to_close_lock.acquire(False)
+
+        def softClose(self):
+            self.establish_connection_to_close_lock.acquire(False)
+            self.close()
+
+        def close(self, blockUntilClosed = True):
+            '''close may wait 1 second.'''
+            Listener.close(self)
+            if self.establish_connection_to_close_lock.acquire(False):
+                if not blockUntilClosed:
+                    thread_start_new(self._connect_to_pipe_to_close_it, ())
+                else:
+                    self._connect_to_pipe_to_close_it()
+
+        def _connect_to_pipe_to_close_it(self):
+            import _multiprocessing
+            win32 = _multiprocessing.win32
+            address = self.listener.address
+            try:
+                h = win32.CreateFile(
+                    address, win32.GENERIC_READ | win32.GENERIC_WRITE,
+                    0, win32.NULL, win32.OPEN_EXISTING, 0, win32.NULL
+                    )
+                _multiprocessing.PipeConnection(h).close()
+            except WindowsError as err:
+                if err.args[0] in self.ignorePipeErrorsWhenClosing:
+                    return
+                raise
+
 
 class R(object):
     def __init__(self, f, *args):
@@ -390,7 +451,7 @@ class ClientConnection(BaseConnection):
     def accept(self):
         try:
             with self:
-                obj = self._connection.recv()
+                obj = self.acceptObject()
         except (EOFError, IOError):
             self.close()
         except:
@@ -405,11 +466,32 @@ class ClientConnection(BaseConnection):
         BaseConnection.close(self)
         self._connection.close()
 
+    def acceptObject(self):
+        while not self._connection.closed:
+            if self._connection.poll():
+                return self._connection.recv()
+            else:
+                time.sleep(0.001)
+
+class SocketConnection(ClientConnection):
+    
+    def acceptObject(self):
+        l = [self._connection]
+        try:
+            rl, wl, xl = select.select(l, l, l)
+        except select.error as err:
+            if self._connection.closed or err.args[0] == 10038:
+                raise EOFError('select errors - connection closed')
+            print self._connection
+            raise
+        if rl or wl or xl:
+            obj = self._connection.recv()
+
 
 
 __all__ = ['ConnectionBroken', 'has_unix', 'has_ipv6', 'ClientConnection',
            'BaseConnection', 'BrokenConnection', 'IPv4Listener', 'R',
-           'has_pipe'
+           'has_pipe', 'SocketConnection'
            ]
 if has_unix:
     __all__.append('UnixListener')

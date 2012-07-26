@@ -3,12 +3,17 @@ import sys
 import subprocess
 import re
 
+def isTestFile(fileName):
+    return fileName.lower().startswith('test_') and \
+           (   fileName.lower().endswith('.py') or \
+               fileName.lower().endswith('.pyw'))
+
 cwd = os.getcwd()
 try:
     for dirPath, dirNames, fileNames in os.walk(os.path.abspath('.')):
         os.chdir(dirPath)
         for fileName in fileNames:
-            if fileName.lower().startswith('test_'):
+            if isTestFile(fileName):
                 p = subprocess.Popen([sys.executable, fileName],
                                      stdin = subprocess.PIPE,
                                      stderr = subprocess.PIPE,

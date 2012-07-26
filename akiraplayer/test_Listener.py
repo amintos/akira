@@ -9,10 +9,10 @@ import Listener
 
 from Listener import ConnectionPossibility
 
-startedThreads = []
+startedThreads = {}
 def thread_start_new(*args, **kw):
     id = thread.start_new(*args, **kw)
-    startedThreads.append(id)
+    startedThreads[id] = args
 ##    print '\nstarted_thread %i %s\n' % (id, args[0])
     return id
 
@@ -99,7 +99,7 @@ class CreateConnectionsTest(unittest.TestCase):
 
 
 testOthers = True
-if Listener.has_pipe and testOthers and False:
+if Listener.has_pipe and testOthers and 1:
     class PipeTest(CreateConnectionsTest):
         ListenerClass = Listener.PipeListener
 
@@ -113,12 +113,19 @@ if Listener.has_ipv6 and testOthers:
 
         def test_listeners_address_is_colonColon(self):
             self.assertEquals(self.listener.listener.address[0], '::')
-        
 
 class IPv4Test(CreateConnectionsTest):
 
     def test_listeners_address_is_0000(self):
         self.assertEquals(self.listener.listener.address[0], '0.0.0.0')
+
+
+class MockIPv4Listener(Listener.IPv4Listener):
+
+    wrapAcceptedConnection = Listener.Listener.wrapAcceptedConnection
+
+class ClientConnectionOnSocketTest(CreateConnectionsTest):
+    ListenerClass = MockIPv4Listener
 
 class IPv4Test1(unittest.TestCase):
 
@@ -207,6 +214,21 @@ class removeDuplicatesTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main(exit = False, verbosity = 1)
+    c = 1
+    t = time.time() + 2
+    while c and time.time() < t:
+        c = False
+        threadIds = sys._current_frames().keys()
+        for threadId in startedThreads:
+            if threadId in threadIds:
+                c = True
+                break
+        time.sleep(0.01)
+    threadIds = sys._current_frames().keys()
+    for threadId in startedThreads:
+        if threadId in threadIds:
+            print 'Thread %i is running. started by %s' % \
+                  (threadId, startedThreads[threadId])
     if False:
         import sys
         time.sleep(0.1) # wait for threads to die

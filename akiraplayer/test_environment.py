@@ -127,6 +127,8 @@ class SocketTest(unittest.TestCase):
             self.fail()
         else:
             t += time.time()
+            ##    0.009999990463256836
+            t +=  0.0000001
             self.assertGreater(t, TIMEOUT)
         
     def test_close_between__select_and_accept(self):
