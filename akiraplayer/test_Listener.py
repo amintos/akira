@@ -87,6 +87,10 @@ class CreateConnectionsTest(unittest.TestCase):
             time.sleep(0.001)
         self.assertEquals(value, 'valueSet')
 
+    def test_connectionPossibilities_can_be_pickled(self):
+        poss = self.listener.getConnectionPossibilities()
+        self.assertEquals(dumpLoad(poss), poss)
+
     def tearDown(self):
         self.listener.close()
         for conn in self._connections + SomeProcess._connections:

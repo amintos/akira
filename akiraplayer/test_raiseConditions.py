@@ -35,7 +35,7 @@ class SomeProcess(object):
 
 TIMEOUT = 0.01
 
-class CreateConnectionsTest(unittest.TestCase):
+class CreateConnectionsTestIpv4(unittest.TestCase):
 
     ListenerClass = Listener.IPv4Listener
 
@@ -54,7 +54,8 @@ class CreateConnectionsTest(unittest.TestCase):
     def accept(self):
         self.accepts_started += 1
         try:
-            return self._accept()
+            conn = self._accept()
+            return conn
         finally:
             self.accepts_ended += 1
     
@@ -66,7 +67,7 @@ class CreateConnectionsTest(unittest.TestCase):
     def test_create_connection_success(self):
         connection = self.getConnection()
         time.sleep(TIMEOUT)
-        SomeProcess._connections[0].close()
+        SomeProcess._connections.pop().close()
         connection.close()
         self.listener.close()
         time.sleep(TIMEOUT)
@@ -82,7 +83,7 @@ class CreateConnectionsTest(unittest.TestCase):
         self.listener.listener._listener.close = close
         connection = self.getConnection()
         time.sleep(TIMEOUT)
-        SomeProcess._connections[0].close()
+        SomeProcess._connections.pop().close()
         connection.close()
         self.listener.close()
         time.sleep(TIMEOUT)
@@ -90,10 +91,10 @@ class CreateConnectionsTest(unittest.TestCase):
 
     def test_create_connection_success2(self):
         connection = self.getConnection()
-        SomeProcess._connections[0].close()
         connection.close()
         self.listener.close()
         time.sleep(TIMEOUT)
+        SomeProcess._connections.pop().close()
         self.assertEquals(self.accepts_started, self.accepts_ended)
         time.sleep(TIMEOUT)
 
@@ -101,6 +102,19 @@ class CreateConnectionsTest(unittest.TestCase):
         self.listener.close()
         for conn in self._connections + SomeProcess._connections:
             conn.close()
+
+
+if Listener.has_ipv6:
+    class CreateConnectionsTestIpv6(CreateConnectionsTestIpv4):
+        ListenerClass = Listener.IPv6Listener
+
+if Listener.has_pipe:
+    class CreateConnectionsTestPipe(CreateConnectionsTestIpv4):
+        ListenerClass = Listener.PipeListener
+
+if Listener.has_unix:
+    class CreateConnectionsTestUnix(CreateConnectionsTestIpv4):
+        ListenerClass = Listener.UnixListener
 
 
 if __name__ == '__main__':

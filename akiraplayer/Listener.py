@@ -16,17 +16,18 @@ import TopConnection
 
 import select
 
+pipes_are_supported = False
 has_ipv4 = hasattr(socket, 'AF_INET')
 has_ipv6 = socket.has_ipv6
 has_unix = 'AF_UNIX' in connection_families
-has_pipe = 'AF_PIPE' in connection_families
+has_pipe = 'AF_PIPE' in connection_families and pipes_are_supported
 
 class ConnectionMustBeTop(Exception):
     '''The connection must be the top connection
 
 do something like this:
 with connection:
-    # here is where the error occurs
+    # here is where the error now does not occur
     ...
 
 '''
@@ -130,6 +131,18 @@ class ConnectionPossibility(object):
 
     def __call__(self):
         return self.function(*self.args, **self.kw)
+
+    def __eq__(self, other):
+        if other.__class__ is object:
+            return False
+        if issubclass(self.__class__, other.__class__):
+            return self.function == other.function and \
+                   self.args == other.args and \
+                   self.kw == other.kw
+        if issubclass(other.__class__, self.__class__):
+            return other == self
+        return False
+        
 
 
 class BrokenConnection(BaseConnection):
@@ -343,10 +356,16 @@ if has_pipe:
     class PipeListener(Listener):
         def __init__(self):
             Listener.__init__(self, 'AF_PIPE')
+            self.lock = thread.allocate_lock()
 
-##        def acceptConnection(self):
+        def acceptConnection(self):
 ##            raise IOError()
-##            return self.listener.accept()
+##            with self.lock:
+                return self.listener.accept()
+
+        def close(self):
+##            with self.lock:
+                Listener.close(self)
 
 class R(object):
     def __init__(self, f, *args):
