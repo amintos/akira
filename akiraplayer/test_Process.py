@@ -192,8 +192,5 @@ class setConnectionEndpointsAlgorithmTest(unittest.TestCase):
                 break
         self.assertEquals(c.fromProcess(), thisProcess)
         
-    def test_on_dedicated_process(self):
-        self.fail()
-
 if __name__ == '__main__':
     unittest.main(exit = False)

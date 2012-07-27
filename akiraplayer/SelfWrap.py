@@ -17,17 +17,27 @@ def aspectSelfWrap(BaseClass):
             __setattr__(self, 'obj', obj)
 
         def __setattr__(self, name, value):
-            return __setattr__(__getattribute__(self, 'obj'), name, value)
+            obj = __getattribute__(self, 'obj')
+            return __setattr__(obj, name, value)
 
         def __getattribute__(self, name):
-            return __getattribute__(__getattribute__(self, 'obj'), name)
+            obj = __getattribute__(self, 'obj')
+            return __getattribute__(obj, name)
 
         def __delattr__(self, name):
-            return __delattr__(__getattribute__(self, 'obj'), name)
-            
-    return SelfWrap
+            obj = __getattribute__(self, 'obj')
+            return __delattr__(obj, name)
+
+    def selfWrap(obj):
+        if type(obj) == SelfWrap:
+            return obj
+        return SelfWrap(obj)
+    return selfWrap
 
 SelfWrap= aspectSelfWrap(object)
+
+def getObject(selfWrap):
+    return object.__getattribute__(selfWrap, 'obj')
 
 def objectGetattributeFunction(function):
     ''' use __getattribute__, __setattr__, __delattr__ of object

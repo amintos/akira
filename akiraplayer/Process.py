@@ -2,7 +2,9 @@ import socket
 import time
 import thread
 import os
+from R import R
 
+from VeryPicklableObject import picklable
 import Listener
 from setConnectionEndpointsAlgorithm import setConnectionEndpoints
 
@@ -34,6 +36,7 @@ class Process(object):
     def identityString(self):
         return self._identityString
 
+    @picklable
     def call(self, aFunction, args, kw = {}):
         raise NotImplementedError('todo')    
     
@@ -67,14 +70,6 @@ class Process(object):
         return 'Process %s on %s' % (self.pid, self.hostName)
 
 Process.ProcessClassAfterUnpickling = Process
-
-class R(object):
-    def __init__(self, reducedRepresentation):
-        self.reducedRepresentation = reducedRepresentation
-    def __reduce__(self):
-        return self.reducedRepresentation
-    def __call__(self):
-        raise NotImplementedError('this should never be called')
 
 class ProcessInOtherProcess(Process):
 

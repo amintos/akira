@@ -2,6 +2,7 @@
 import magicMethods
 
 from SelfWrap import objectGetattributeFunction as insideProxy
+from SelfWrap import getObject as outsideProxy
 
 
 _cached_classes = {} # object type : constructed
@@ -53,4 +54,13 @@ this proxy puts all method calls through to the object
 Proxy.afterClassCreation()
 
 def proxy(obj):
-    return Proxy(obj)   
+    return Proxy(obj)
+
+class ProxyWithExceptions(Proxy):
+    exceptions = ()
+
+    @insideProxy
+    def __getattribute__(self, name):
+        if name in self.exceptions:
+            return getattr(self, name)
+        return Proxy.__getattribute__(self, name)
