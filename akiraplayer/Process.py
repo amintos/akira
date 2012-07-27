@@ -4,7 +4,7 @@ import thread
 import os
 from R import R
 
-from VeryPicklableObject import picklable
+from VeryPicklableObject import picklableAttribute
 import Listener
 from setConnectionEndpointsAlgorithm import setConnectionEndpoints
 
@@ -36,7 +36,7 @@ class Process(object):
     def identityString(self):
         return self._identityString
 
-    @picklable
+    @picklableAttribute
     def call(self, aFunction, args, kw = {}):
         raise NotImplementedError('todo')    
     
@@ -103,6 +103,7 @@ class ProcessInOtherProcess(Process):
                 return aConnection
         return None
 
+    @picklableAttribute
     def call(self, function, args, kw = {}):
         for i in xrange(self.callAttempts):
             aConnection = self.chooseConnection()
@@ -125,7 +126,7 @@ class ProcessInOtherProcess(Process):
         
     def chooseConnection(self):
         'this raises'
-        ## todo: better algorithm for aConnection attempts
+        ## todo: better algorithm for aConnection attempts & choosing
         if not self.hasConnections():
             aConnection = self.newConnection()
         else:
@@ -148,6 +149,7 @@ class _ThisProcess(Process):
                          time.time())
         self._listeners = []
     
+    @picklableAttribute
     def call(self, aFunction, args, kw = {}):
         return aFunction(*args, **kw)
 
