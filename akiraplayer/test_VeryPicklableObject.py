@@ -1,7 +1,7 @@
 import unittest
 import pickle
 import VeryPicklableObject
-from VeryPicklableObject import PicklableType, X, picklable
+from VeryPicklableObject import PicklableType, X, picklable, picklableAttribute
 
 class PicklableSubclass(object):
 
@@ -99,6 +99,59 @@ class picklableTest(PicklabilityTestBase):
 
     def test_twice_picklable_is_once_picklable(self):
         self.assertIs(picklable(f), f)
+
+class Z(object):
+
+    @picklableAttribute
+    def f(self):
+        return 1
+
+    @picklableAttribute
+    def g(self):
+        return [1,2,3,4]
+
+    @picklableAttribute
+    def h():pass
+    _h = h
+    h = 3
+
+    def __eq__(self, other):
+        return type(self) == type(other)
+
+
+class TestAccessibleAttribute(PicklabilityTestBase):
+
+    Z = Z
+
+    def setUp(self):
+        self.z = self.Z()
+
+    def test_can_be_called_f(self):
+        self.assertEquals(self.z.f(), 1)
+    
+    def test_can_be_called_g(self):
+        self.assertEquals(self.z.g(), [1,2,3,4])
+
+    def test_pickles_of_instance(self):
+        self.assertPickles(self.z.f)
+        self.assertPickles(self.z.g)
+
+    def test_pickles_of_class(self):
+        self.assertPickles(self.Z.f)
+        self.assertPickles(self.Z.g)
+
+    def test_can_compare_functions(self):
+        self.assertEquals(self.z.f, self.z.f)
+        self.assertIsNot(self.z.f, self.z.f)
+
+    def test_if_not_accessible_error(self):
+        self.assertRaises(AssertionError,
+                          lambda: self.z._h)
+    
+    def test_if_not_accessible_error_class(self):
+        self.assertRaises(AssertionError,
+                          lambda: self.Z._h)
+    
 
 if __name__ == '__main__':
     unittest.main(exit = False, verbosity = 1)

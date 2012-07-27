@@ -1,3 +1,4 @@
+import threading
 from proxy import ProxyWithExceptions, insideProxy, outsideProxy
 from R import R
 
@@ -191,14 +192,73 @@ class picklableClassmethod(pickleableWithGetter):
 class picklableStaticmethod(picklableClassmethod):
     
     n = PicklableType(staticmethod)
-##    
-##class picklableAttribute(object):
-##
-##    def __init__(self, function):
-##        self.function = function
-##        
-##    def __get__(self, obj, cls = None):
-##        return 
-##
-##    def __call__(self, *args, **kw):
-##        return self.function(*args, **kw)
+
+#
+# pickle a function as attribute of a class or object
+#
+
+
+class AccessedAttribute(object):
+    def __init__(self, delegation, creatorAfterPickle, args):
+        self.delegation = delegation
+        self.__name__ = delegation.__name__
+        self.creatorAfterPickle = creatorAfterPickle
+        self.args = args
+        
+    def __call__(self, *args, **kw):
+        return self.delegation(*args, **kw)
+
+    def __reduce__(self):
+        return self.creatorAfterPickle, self.args
+
+    def __eq__(self, other):
+        return other == self.delegation
+
+    def __repr__(self):
+        return '<%s of %r>' % (type(self).__name__, self.delegation)
+
+def _createAccessedAttribute(name, obj, cls):
+    if obj is None:
+        return getattr(cls, name)
+    return getattr(obj, name)
+
+class picklableAttribute(threading.local):
+
+    AccessedAttribute = AccessedAttribute
+
+    errorString = 'can only be used if  the function is accessible '\
+                  'under its name in the class.'
+
+    def __init__(self, function):
+        self.__name__ = function.__name__
+        self.__module__ = function.__module__
+        self.function = function
+        self.__isGetting = False
+        self.__identification = []
+        
+    def __get__(self, obj, cls = None):
+        if self.__isGetting:
+            return self.__identification
+        self.__isGetting = True
+        try:
+            _id = getattr(cls, self.__name__)
+            assert _id is self.__identification, self.errorString
+            if obj is not None:
+                assert type(obj) is cls
+            return self.AccessedAttribute(self.function.__get__(obj, cls), \
+                                          _createAccessedAttribute, \
+                                          (self.__name__, obj, cls))
+        finally:
+            self.__isGetting = False
+
+    def __call__(self, *args, **kw):
+        return self.function(*args, **kw)
+
+class X(object):
+    @picklableAttribute
+    def f():pass
+X.f
+X().f
+
+
+__all__ = ['picklable', 'picklableAttribute']
