@@ -5,7 +5,7 @@ Since the application shall be a multiprocess multicomputer application we want 
 
 Therefore the following architecture is proposed:
 
-.. image:: https://github.com/amintos/akira/raw/playground/model/images/processes_and_communication_final.svg
+.. image:: https://github.com/amintos/akira/raw/playground/model/images/processes_and_communication_final.png
 
 
 
