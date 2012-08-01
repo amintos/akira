@@ -1,7 +1,7 @@
 
 
-.. |processArchitecture| image:: https://github.com/amintos/akira/raw/playground/model/images/processes_and_communication_final.png
-.. |user| image:: https://github.com/amintos/akira/raw/playground/model/images/user.png
+.. |processArchitecture| image:: https://github.com/amintos/akira/raw/playground/documentation/images/processes_and_communication_final.png
+.. |user| image:: https://github.com/amintos/akira/raw/playground/documentation/images/user.png
 .. _Process: https://github.com/amintos/akira/blob/playground/process/Process.py
 .. _proxy: https://github.com/amintos/akira/blob/playground/process/proxy.py
 
