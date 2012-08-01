@@ -14,9 +14,9 @@ If now the user |user| in Process1 wants to connect to Process2, he creates a co
 This listener then creates a connection on his side of the net for process1.
 Process1 in Process2 is a representative for the original Process1 in Process1. It holds the connection.
 Both sides of a connection are informed about ther endpoints called fromProcess and toProcess. 
-Process1 in Process1 and Process2 in Process2 are of type Process_._ThisProcess.
-Process1 in Process2 and Process2 in Process1 are of type Process_.ProcessInOtherProcess.
+Process1 in Process1 and Process2 in Process2 are of type |Process|._ThisProcess.
+Process1 in Process2 and Process2 in Process1 are of type |Process|.ProcessInOtherProcess.
 
-.. |user| image:: images/user.png
-.. _Process https://github.com/amintos/akira/blob/playground/process/Process.py
+.. |user| image:: https://github.com/amintos/akira/raw/playground/model/images/user.png
+.. |Process| https://github.com/amintos/akira/blob/playground/process/Process.py
 
