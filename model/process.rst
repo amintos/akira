@@ -1,4 +1,3 @@
-
 Processes
 =========
 
@@ -6,7 +5,7 @@ Since the application shall be a multiprocess multicomputer application we want 
 
 Therefore the following architecture is proposed:
 
-.. image:: ./images/processes_and_communication_final.png
+.. image:: images/processes_and_communication_final.png
 
 
 
