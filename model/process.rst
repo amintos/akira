@@ -7,5 +7,12 @@ Therefore the following architecture is proposed:
 
 .. image:: https://github.com/amintos/akira/raw/playground/model/images/processes_and_communication_final.png
 
+All processes such as Process1 and Process2 ahve representations as an object.
+There is Process1 on the left and Process2 on the right. Both have an object with solid border that represents the process itself.
 
+If now the user |user| in Process1 wants to connect to Process2, he creates a connection to Process2's listener.
+This listener then creates a connection on his side of the net for process1.
+Process1 in Process2 is a representative for the original Process1 in Process1.
+
+.. |user| image:: biohazard.png
 
