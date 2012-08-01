@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="341.44531"
+   height="214.35928"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.1 "
+   sodipodi:docname="connection_stack.svg">
+  <title
+     id="title4588">Processes&amp;Communication</title>
+  <defs
+     id="defs4">
+    <marker
+       inkscape:stockid="Arrow1Lstart"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Lstart"
+       style="overflow:visible">
+      <path
+         id="path3998"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;marker-start:none"
+         transform="matrix(0.8,0,0,0.8,10,0)"
+         inkscape:connector-curvature="0" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Lend"
+       style="overflow:visible">
+      <path
+         id="path4001"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;marker-start:none"
+         transform="matrix(-0.8,0,0,-0.8,-10,0)"
+         inkscape:connector-curvature="0" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Lend"
+       style="overflow:visible">
+      <path
+         id="path4019"
+         style="font-size:12px;fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(-1.1,0,0,-1.1,-1.1,0)"
+         inkscape:connector-curvature="0" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4142136"
+     inkscape:cx="170.64572"
+     inkscape:cy="126.35619"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:object-nodes="false"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:window-width="1366"
+     inkscape:window-height="716"
+     inkscape:window-x="-4"
+     inkscape:window-y="-4"
+     inkscape:window-maximized="1"
+     fit-margin-top="10"
+     fit-margin-left="10"
+     fit-margin-right="10"
+     fit-margin-bottom="10" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title>Processes&amp;Communication</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Ebene 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-282.82037,-183.13681)">
+    <g
+       id="g3243">
+      <g
+         id="g3233">
+        <g
+           id="g3183"
+           transform="translate(-18.525395,0)">
+          <path
+             style="opacity:0.66000001;fill:none;stroke:#000000;stroke-width:0.99999976;stroke-opacity:1"
+             d="m 367.76052,307.74328 c -0.0183,0 -0.0278,0.0523 -0.0278,0.0937 l 0,28.84375 c 0,0.0415 0.009,0.0625 0.0278,0.0625 l 103.57887,0 1.45807,0 103.57887,0 c 0.0183,0 0.0278,-0.021 0.0278,-0.0625 l 0,-28.84375 c 0,-0.0415 -0.009,-0.0937 -0.0278,-0.0937 l -103.57887,0 -1.45807,0 -103.57887,0 z"
+             id="path3095"
+             inkscape:connector-curvature="0" />
+          <text
+             sodipodi:linespacing="125%"
+             id="text3097"
+             y="327.53622"
+             x="408.05475"
+             style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+             xml:space="preserve"><tspan
+               id="tspan3101"
+               y="327.53622"
+               x="408.05475"
+               sodipodi:role="line">topConnection</tspan></text>
+        </g>
+        <g
+           id="g3105"
+           transform="translate(-13.20529,-58.538576)">
+          <text
+             xml:space="preserve"
+             style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+             x="416.31863"
+             y="357.94574"
+             id="text4351"
+             sodipodi:linespacing="125%"><tspan
+               sodipodi:role="line"
+               id="tspan4353"
+               x="416.31863"
+               y="357.94574">Connection</tspan></text>
+          <path
+             inkscape:connector-curvature="0"
+             id="rect4510"
+             d="m 400.26056,336.28191 c -0.0117,0 -0.0177,0.0523 -0.0177,0.0937 l 0,28.84375 c 0,0.0415 0.006,0.0625 0.0177,0.0625 l 66.02306,0 0.9294,0 66.02306,0 c 0.0117,0 0.0177,-0.021 0.0177,-0.0625 l 0,-28.84375 c 0,-0.0415 -0.006,-0.0937 -0.0177,-0.0937 l -66.02306,0 -0.9294,0 -66.02306,0 z"
+             style="opacity:0.66000001;fill:none;stroke:#000000;stroke-width:0.99999982;stroke-opacity:1" />
+        </g>
+      </g>
+      <text
+         sodipodi:linespacing="125%"
+         id="text3115"
+         y="333.28711"
+         x="292.82037"
+         style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           y="333.28711"
+           x="292.82037"
+           id="tspan3117"
+           sodipodi:role="line" /><tspan
+           id="tspan3123"
+           y="358.28711"
+           x="292.82037"
+           sodipodi:role="line">with Connection:</tspan><tspan
+           id="tspan3119"
+           y="383.28711"
+           x="292.82037"
+           sodipodi:role="line">    topConnection.top() # Connection </tspan><tspan
+           id="tspan3121"
+           y="408.28711"
+           x="292.82037"
+           sodipodi:role="line" /></text>
+    </g>
+    <g
+       id="g3225"
+       transform="translate(-11.99472,0)">
+      <g
+         id="g3220">
+        <path
+           inkscape:connector-curvature="0"
+           id="path3095-5"
+           d="m 361.22985,193.63681 c -0.0183,0 -0.0278,0.0523 -0.0278,0.0937 l 0,28.84375 c 0,0.0415 0.009,0.0625 0.0278,0.0625 l 103.57887,0 1.45807,0 103.57887,0 c 0.0183,0 0.0278,-0.021 0.0278,-0.0625 l 0,-28.84375 c 0,-0.0415 -0.009,-0.0937 -0.0278,-0.0937 l -103.57887,0 -1.45807,0 -103.57887,0 z"
+           style="opacity:0.66000001;fill:none;stroke:#000000;stroke-width:0.99999976;stroke-opacity:1" />
+        <text
+           xml:space="preserve"
+           style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           x="401.52408"
+           y="213.42976"
+           id="text3097-8"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             x="401.52408"
+             y="213.42976"
+             id="tspan3101-3">topConnection</tspan></text>
+      </g>
+      <text
+         sodipodi:linespacing="125%"
+         id="text3170"
+         y="239.95659"
+         x="345.07877"
+         style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           id="tspan3174"
+           y="239.95659"
+           x="345.07877"
+           sodipodi:role="line">topConnection.top() # error</tspan></text>
+    </g>
+  </g>
+</svg>

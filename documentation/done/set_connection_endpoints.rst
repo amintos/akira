@@ -30,7 +30,7 @@ Connection in Process1 leads to process Process2.
 
 .. image:: https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_5.png
 
-Then the other way around.. a representative of Process1 is created in Process2.
+After that the other way around.. a representative of Process1 is created in Process2.
 
 .. image:: https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_6.png
 
