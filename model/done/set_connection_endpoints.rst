@@ -38,6 +38,13 @@ In the end the connection knows its endpoints in both processes.
 
 
 
+`Where is it implemented?
+<https://github.com/amintos/akira/blob/playground/process/setConnectionEndpointsAlgorithm.py>`_
+`How is a connection serialized?
+<serialize_connections.html>`_ 
+`What is that Process object good for?
+<process.html>`_
+
 
 
 
