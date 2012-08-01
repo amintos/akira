@@ -174,38 +174,44 @@
            sodipodi:role="line" /></text>
     </g>
     <g
-       id="g3225"
-       transform="translate(-11.99472,0)">
-      <g
-         id="g3220">
-        <path
-           inkscape:connector-curvature="0"
-           id="path3095-5"
-           d="m 361.22985,193.63681 c -0.0183,0 -0.0278,0.0523 -0.0278,0.0937 l 0,28.84375 c 0,0.0415 0.009,0.0625 0.0278,0.0625 l 103.57887,0 1.45807,0 103.57887,0 c 0.0183,0 0.0278,-0.021 0.0278,-0.0625 l 0,-28.84375 c 0,-0.0415 -0.009,-0.0937 -0.0278,-0.0937 l -103.57887,0 -1.45807,0 -103.57887,0 z"
-           style="opacity:0.66000001;fill:none;stroke:#000000;stroke-width:0.99999976;stroke-opacity:1" />
-        <text
-           xml:space="preserve"
-           style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-           x="401.52408"
-           y="213.42976"
-           id="text3097-8"
-           sodipodi:linespacing="125%"><tspan
-             sodipodi:role="line"
-             x="401.52408"
-             y="213.42976"
-             id="tspan3101-3">topConnection</tspan></text>
-      </g>
+       id="g3220"
+       transform="translate(-11.994725,0)">
+      <path
+         style="opacity:0.66000001;fill:none;stroke:#000000;stroke-width:0.99999976;stroke-opacity:1"
+         d="m 361.22985,193.63681 c -0.0183,0 -0.0278,0.0523 -0.0278,0.0937 l 0,28.84375 c 0,0.0415 0.009,0.0625 0.0278,0.0625 l 103.57887,0 1.45807,0 103.57887,0 c 0.0183,0 0.0278,-0.021 0.0278,-0.0625 l 0,-28.84375 c 0,-0.0415 -0.009,-0.0937 -0.0278,-0.0937 l -103.57887,0 -1.45807,0 -103.57887,0 z"
+         id="path3095-5"
+         inkscape:connector-curvature="0" />
       <text
          sodipodi:linespacing="125%"
-         id="text3170"
-         y="239.95659"
-         x="345.07877"
+         id="text3097-8"
+         y="213.42976"
+         x="401.52408"
          style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
          xml:space="preserve"><tspan
-           id="tspan3174"
-           y="239.95659"
-           x="345.07877"
-           sodipodi:role="line">topConnection.top() # error</tspan></text>
+           id="tspan3101-3"
+           y="213.42976"
+           x="401.52408"
+           sodipodi:role="line">topConnection</tspan></text>
     </g>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="333.08405"
+       y="242.78502"
+       id="text3170"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         x="333.08405"
+         y="242.78502"
+         id="tspan3174">topConnection.top() # error</tspan></text>
+    <rect
+       style="opacity:0.51000001;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:2.99999999, 1;stroke-dashoffset:0"
+       id="rect3265"
+       width="308.29855"
+       height="1"
+       x="299.39374"
+       y="258.48895"
+       rx="0.074511841"
+       ry="0.075000003" />
   </g>
 </svg>
