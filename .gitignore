@@ -26,3 +26,6 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 akiradb
+
+/model/images/processes_and_communication.png
+/model/process.pdf
