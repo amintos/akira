@@ -5,6 +5,13 @@ Since the application shall be a multiprocess multicomputer application we want 
 After some thoughts: It would be good to have a single object *p* one can carry around anywhere representing a process. 
 *p*.call(*function*, *arguments*) then execute the *function* in this process *p* with the given *arguments*.
 
+
+If one does not have to worry how to connect back to the origins of an object one can more easily implement these:
+
+- Object references to objects in other processes (see proxy_)
+- Mobile objects
+
+
 Therefore the following architecture is proposed:
 
 .. image:: https://github.com/amintos/akira/raw/playground/model/images/processes_and_communication_final.png
@@ -21,4 +28,4 @@ Process1 in Process2 and Process2 in Process1 are of type Process_.ProcessInOthe
 
 .. |user| image:: https://github.com/amintos/akira/raw/playground/model/images/user.png
 .. _Process: https://github.com/amintos/akira/blob/playground/process/Process.py
-
+.. _proxy: https://github.com/amintos/akira/blob/playground/process/proxy.py
