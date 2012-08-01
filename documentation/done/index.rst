@@ -33,5 +33,15 @@ What is interesting
   <https://github.com/amintos/akira/blob/playground/process/setConnectionEndpointsAlgorithm.py>`__
 
 
+- Serialize connections
+  `rst
+  <serialize_connections.rst>`__
+  `html
+  <serialize_connections.html>`__
+  `py
+  <https://github.com/amintos/akira/blob/playground/process/Listener.py>`__
+
+
+
 
 

@@ -47,15 +47,15 @@ Questions?
 Where is it implemented? `(py)
 <https://github.com/amintos/akira/blob/playground/process/setConnectionEndpointsAlgorithm.py>`_
 
-How is a connection serialized? `(html)
-<serialize_connections.html>`__
-`(rst)
+How is a connection serialized? `(rst)
 <serialize_connections.rst>`__
+`(html)
+<serialize_connections.html>`__
 
-What is that Process object good for? `(html)
-<process.html>`__
-`(rst) 
+What is that Process object good for? `(rst) 
 <process.rst>`__
+`(html)
+<process.html>`__
 
 
 

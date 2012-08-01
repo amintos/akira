@@ -326,10 +326,10 @@ After some thoughts: It would be good to have a single object <em>p</em> one can
 <li>Mobile objects (as <a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/Process.py">Process</a> es)</li>
 </ul>
 <p>Therefore the following architecture is proposed:</p>
-<p><img alt="processArchitecture" src="https://github.com/amintos/akira/raw/playground/model/images/processes_and_communication_final.png" /></p>
+<p><img alt="processArchitecture" src="https://github.com/amintos/akira/raw/playground/documentation/images/processes_and_communication_final.png" /></p>
 <p>All processes such as Process1 and Process2 have representations as an object.
 There is Process1 on the left and Process2 on the right. Both have an object with solid border that represents the process itself.</p>
-<p>If now the user <img alt="user" src="https://github.com/amintos/akira/raw/playground/model/images/user.png" /> in Process1 wants to connect to Process2, it creates a connection to Process2's listener.
+<p>If now the user <img alt="user" src="https://github.com/amintos/akira/raw/playground/documentation/images/user.png" /> in Process1 wants to connect to Process2, it creates a connection to Process2's listener.
 This listener then creates a connection on his side of the net for process1.
 Process1 in Process2 is a representative for the original Process1 in Process1. It holds the connection.
 Both sides of a connection are informed about ther endpoints called fromProcess and toProcess. <a class="reference external" href="set_connection_endpoints.rst">(rst)</a>

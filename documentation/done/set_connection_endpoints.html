@@ -319,30 +319,30 @@ ul.auto-toc {
 
 <div class="section" id="how-does-a-connection-know-about-its-endpoints">
 <h1>How does a connection know about its endpoints?</h1>
-<p>The user <img alt="user" src="https://github.com/amintos/akira/raw/playground/model/images/user.png" /> wants to connect to Process2.</p>
-<img alt="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_1.png" src="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_1.png" />
+<p>The user <img alt="user" src="https://github.com/amintos/akira/raw/playground/documentation/images/user.png" /> wants to connect to Process2.</p>
+<img alt="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_1.png" src="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_1.png" />
 <p>So the user creates a connection to a listener of Process2.</p>
-<img alt="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_2.png" src="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_2.png" />
+<img alt="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_2.png" src="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_2.png" />
 <p>The listener creates a connection object on the other side, in Process2.</p>
-<img alt="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_3.png" src="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_3.png" />
+<img alt="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_3.png" src="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_3.png" />
 <p>Both connections know where they are from. But they do not know where they lead to.</p>
-<img alt="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_4.png" src="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_4.png" />
+<img alt="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_4.png" src="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_4.png" />
 <p>So the Process2, the side of the listener, starts sending commands to the other side of the connection. Process2 in Process1 comes out as a representative of the original Process2 in Process2.</p>
 <p>Connection in Process1 leads to process Process2.</p>
-<img alt="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_5.png" src="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_5.png" />
+<img alt="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_5.png" src="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_5.png" />
 <p>After that the other way around.. a representative of Process1 is created in Process2.</p>
-<img alt="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_6.png" src="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_6.png" />
+<img alt="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_6.png" src="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_6.png" />
 <p>This would go on as a loop but luckily it can be interrupted if toProcess is already set.</p>
-<img alt="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_7.png" src="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_7.png" />
+<img alt="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_7.png" src="https://raw.github.com/amintos/akira/playground/documentation/images/connection_endpoints_7.png" />
 <p>In the end the connection knows its endpoints in both processes.</p>
 </div>
 <div class="section" id="questions">
 <h1>Questions?</h1>
 <p>Where is it implemented? <a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/setConnectionEndpointsAlgorithm.py">(py)</a></p>
-<p>How is a connection serialized? <a class="reference external" href="serialize_connections.html">(html)</a>
-<a class="reference external" href="serialize_connections.rst">(rst)</a></p>
-<p>What is that Process object good for? <a class="reference external" href="process.html">(html)</a>
-<a class="reference external" href="process.rst">(rst)</a></p>
+<p>How is a connection serialized? <a class="reference external" href="serialize_connections.rst">(rst)</a>
+<a class="reference external" href="serialize_connections.html">(html)</a></p>
+<p>What is that Process object good for? <a class="reference external" href="process.rst">(rst)</a>
+<a class="reference external" href="process.html">(html)</a></p>
 </div>
 </div>
 </body>
