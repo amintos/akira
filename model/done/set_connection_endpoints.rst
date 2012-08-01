@@ -3,6 +3,10 @@
 
 
 
+
+How does a connection know about its endpoints?
+-----------------------------------------------
+
 The user |user| wants to connect to Process2.
 
 
@@ -37,14 +41,21 @@ This would go on as a loop but luckily it can be interrupted if toProcess is alr
 In the end the connection knows its endpoints in both processes.
 
 
+Questions?
+----------
 
-`Where is it implemented?
+Where is it implemented? `(py)
 <https://github.com/amintos/akira/blob/playground/process/setConnectionEndpointsAlgorithm.py>`_
-`How is a connection serialized?
-<serialize_connections.html>`_ 
-`What is that Process object good for?
-<process.html>`_
 
+How is a connection serialized? `(html)
+<serialize_connections.html>`__
+`(rst)
+<serialize_connections.rst>`__
+
+What is that Process object good for? `(html)
+<process.html>`__
+`(rst) 
+<process.rst>`__
 
 
 

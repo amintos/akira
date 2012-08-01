@@ -317,6 +317,8 @@ ul.auto-toc {
 <div class="document">
 
 
+<div class="section" id="how-does-a-connection-know-about-its-endpoints">
+<h1>How does a connection know about its endpoints?</h1>
 <p>The user <img alt="user" src="https://github.com/amintos/akira/raw/playground/model/images/user.png" /> wants to connect to Process2.</p>
 <img alt="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_1.png" src="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_1.png" />
 <p>So the user creates a connection to a listener of Process2.</p>
@@ -333,9 +335,15 @@ ul.auto-toc {
 <p>This would go on as a loop but luckily it can be interrupted if toProcess is already set.</p>
 <img alt="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_7.png" src="https://raw.github.com/amintos/akira/playground/model/images/connection_endpoints_7.png" />
 <p>In the end the connection knows its endpoints in both processes.</p>
-<p><a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/setConnectionEndpointsAlgorithm.py">Where is it implemented?</a>
-<a class="reference external" href="serialize_connections.html">How is a connection serialized?</a>
-<a class="reference external" href="process.html">What is that Process object good for?</a></p>
+</div>
+<div class="section" id="questions">
+<h1>Questions?</h1>
+<p>Where is it implemented? <a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/setConnectionEndpointsAlgorithm.py">(py)</a></p>
+<p>How is a connection serialized? <a class="reference external" href="serialize_connections.html">(html)</a>
+<a class="reference external" href="serialize_connections.rst">(rst)</a></p>
+<p>What is that Process object good for? <a class="reference external" href="process.html">(html)</a>
+<a class="reference external" href="process.rst">(rst)</a></p>
+</div>
 </div>
 </body>
 </html>
