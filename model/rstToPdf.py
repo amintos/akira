@@ -14,7 +14,7 @@ import traceback
 import subprocess
 
 
-def iterateFiles(folder, ending = ('.rst',)):
+def iterateRstFiles(folder, ending = ('.rst',)):
     for dirpath, dirnames, filenames in os.walk('.'):
         for filename in filenames:
             if os.path.splitext(filename)[1].lower() in ending:
@@ -121,7 +121,9 @@ def setup():
     except ImportError: urls.append(url_rst2pdf)
     try: import roman
     except ImportError: urls.append(url_roman)
-    
+    install_tar_gzs(urls)
+
+def install_tar_gzs(urls, debug = 1):
     for url in urls:
         print '-' * 80
         stdout, stderr, code= download_install_tar_gz(url, debug = 1)
@@ -131,25 +133,29 @@ def setup():
             print 'Program exited with error code %s' % code
 
 
-def toRST(folder):
-    for filePath in iterateFiles(folder):
+def iterFiles(directory, ext):
+    for filePath in iterateRstFiles(directory):
         dirPath, fileName = os.path.split(filePath)
-        pdfName = os.path.splitext(fileName)[0] + '.pdf'
-        pdfPath = os.path.join(dirPath, pdfName)
-        if not os.path.exists(pdfPath) or \
-           os.path.getmtime(pdfPath) + 10 < os.path.getmtime(filePath):
+        outName = os.path.splitext(fileName)[0] + ext
+        outputPath = os.path.join(dirPath, outName)
+        if not os.path.exists(outputPath) or \
+           os.path.getmtime(outputPath) + 10 < os.path.getmtime(filePath):
+            yield filePath, outputPath
+
+def rstToPdf(directory):
+    import rst2pdf.createpdf as createpdf
+    for filePath, pdfPath in iterFiles(directory, '.pdf'):
             print filePath
             print 'to pdf: ', pdfPath
             createpdf.main([filePath, '-o', pdfPath])
 
 
 
-setup()
-import rst2pdf.createpdf as createpdf
 
 def main():
+    setup()
     try:
-        toRST(os.getcwd())
+        rstToPdf(os.getcwd())
     except:
         traceback.print_exc()
         raw_input('Type RETURN to exit >')
