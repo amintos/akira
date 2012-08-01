@@ -9,7 +9,7 @@ After some thoughts: It would be good to have a single object *p* one can carry 
 If one does not have to worry how to connect back to the origins of an object one can more easily implement these:
 
 - Object references to objects in other processes (see proxy_)
-- Mobile objects (as Process_es)
+- Mobile objects (as Process_ es)
 
 
 Therefore the following architecture is proposed:
