@@ -33,7 +33,10 @@ There is Process1 on the left and Process2 on the right. Both have an object wit
 If now the user |user| in Process1 wants to connect to Process2, it creates a connection to Process2's listener.
 This listener then creates a connection on his side of the net for process1.
 Process1 in Process2 is a representative for the original Process1 in Process1. It holds the connection.
-Both sides of a connection are informed about ther endpoints called fromProcess and toProcess. 
+Both sides of a connection are informed about ther endpoints called fromProcess and toProcess. `(html)
+<set_connection_endpoints.html>`__
+`(rst)
+<set_connection_endpoints.rst>`__
 Process1 in Process1 and Process2 in Process2 are of type Process_.thisProcess.
 Process1 in Process2 and Process2 in Process1 are of type Process_.ProcessInOtherProcess.
 
