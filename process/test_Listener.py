@@ -210,7 +210,24 @@ class removeDuplicatesTest(unittest.TestCase):
     def test_1(self):
         self.assertEquals(Listener.removeDuplicates([2,1,3,2,4,1,4,3]), [2,1,3,4])
 
-       
+def print_running_threads():
+    import sys
+    time.sleep(0.1) # wait for threads to die
+    print 'frames:', len(sys._current_frames().items())
+    print 'connections:', len(SomeProcess._connections)
+    for connection in SomeProcess._connections:
+        connection.close()
+    time.sleep(5) # wait for threads to die
+    for k in sorted(sys._current_frames()):
+        f = sys._current_frames()[k]
+        
+        if k in startedThreads:
+            print f.f_code.co_filename,
+            print k, f.f_code.co_firstlineno
+        else:
+            print
+    print 'frames:', len(sys._current_frames().items())
+
 
 if __name__ == '__main__':
     unittest.main(exit = False, verbosity = 1)
@@ -230,19 +247,4 @@ if __name__ == '__main__':
             print 'Thread %i is running. started by %s' % \
                   (threadId, startedThreads[threadId])
     if False:
-        import sys
-        time.sleep(0.1) # wait for threads to die
-        print 'frames:', len(sys._current_frames().items())
-        print 'connections:', len(SomeProcess._connections)
-        for connection in SomeProcess._connections:
-            connection.close()
-        time.sleep(5) # wait for threads to die
-        for k in sorted(sys._current_frames()):
-            f = sys._current_frames()[k]
-            
-            if k in startedThreads:
-                print f.f_code.co_filename,
-                print k, f.f_code.co_firstlineno
-            else:
-                print
-        print 'frames:', len(sys._current_frames().items())
+        print_running_threads()

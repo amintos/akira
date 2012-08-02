@@ -50,3 +50,5 @@ class TermInterpretationTest(unittest.TestCase):
         self.assertIn('b', t.statements)
         self.assertEqual('a', t.statements['b'][0].body[0].functor)
 
+if __name__ == '__main__':
+    unittest.main(exit = False)
