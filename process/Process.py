@@ -69,10 +69,6 @@ class Process(object):
     def __str__(self):
         return 'Process %s on %s' % (self.pid, self.hostName)
 
-    def printPy(self):
-        import pickle
-        print 'o = __import__("pickle").loads(%r)' % pickle.dumps(self)
-
 Process.ProcessClassAfterUnpickling = Process
 
 class ProcessInOtherProcess(Process):
