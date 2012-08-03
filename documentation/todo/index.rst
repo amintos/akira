@@ -38,3 +38,6 @@ What is to be done
 
 - solve problem: when unpickled object could use same connection to communicate and block.
 
+- if there is an error on the other side of the connection I want to be able to access it.
+
+- send proxy objects
