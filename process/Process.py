@@ -73,7 +73,7 @@ Process.ProcessClassAfterUnpickling = Process
 
 class ProcessInOtherProcess(Process):
 
-    callAttempts = 100
+    callAttempts = 10
 
     def __init__(self, *args):
         Process.__init__(self, *args)

@@ -19,6 +19,7 @@ this proxy puts all method calls through to the object
 '''
 
     noMagicMethodNames = set(['__init__'])
+    ## todo: remove inplace methods
     
     @classmethod
     def updateMagicMethods(cls, magicMethodNames):
@@ -64,3 +65,7 @@ class ProxyWithExceptions(Proxy):
         if name in self.exceptions:
             return getattr(self, name)
         return Proxy.__getattribute__(self, name)
+
+
+def isProxy(obj):
+    return issubclass(type(obj), Proxy)

@@ -6,7 +6,7 @@ def pyGet():
     s = pickle.dumps(Process.thisProcess)
     l = []
     while s:
-        l.append(s[:50])
+        l.append(s[:40])
         s = s[40:]
     s = map(repr, l)
     s = '\\\n'.join(s)
@@ -18,7 +18,6 @@ def pyPrint():
 running = thread.allocate_lock()
     
 def run():
-    Process.thisProcess.listenWhereYouCan()
     pyPrint()
     running.acquire(False)
     running.acquire()
@@ -28,6 +27,7 @@ def stop():
     running.release()
 
 if __name__ == '__main__':
+    Process.thisProcess.listenWhereYouCan()
     try:from tools import *
     except ImportError:pass
     import sys
