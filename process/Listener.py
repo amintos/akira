@@ -4,6 +4,7 @@ import thread
 import socket
 import errno
 import time
+import sys
 import os
 
 
@@ -18,11 +19,13 @@ import TopConnection
 
 import select
 
-pipes_are_supported = 1
 has_ipv4 = hasattr(socket, 'AF_INET')
 has_ipv6 = socket.has_ipv6
 has_unix = 'AF_UNIX' in connection_families
-has_pipe = 'AF_PIPE' in connection_families and pipes_are_supported
+has_pipe = 'AF_PIPE' in connection_families
+
+if has_pipe:
+    from windowsErrors import *
 
 class ConnectionMustBeTop(Exception):
     '''The connection must be the top connection
@@ -50,7 +53,6 @@ class NoProcess(object):
 
 class BaseConnection(object):
     
-    _connected = False
     _threadId = None
     _fromProcess = NoProcess()
     _toProcess = NoProcess()
@@ -78,9 +80,6 @@ class BaseConnection(object):
 
     def stopListening(self):
         pass
-
-    def isConnected(self):
-        return self._connected
 
     def call(self, aFunction, args, kw = {}):
         raise NotImplementedError('todo')
@@ -287,7 +286,11 @@ class IPListener(Listener):
                                      (address, self.family, self.authkey))
 
 def connectClientSocket(*args):
-    return SocketConnection(Client(*args))
+    try:
+        client = Client(*args)
+    except socket.error:
+        return None
+    return SocketConnection(client)
 
 def removeDuplicates(aList):
     noDuplicates = []
@@ -364,18 +367,17 @@ if socket.has_ipv6:
     ## end of copy
 
     def connectClientIPv6(address, authkey):
-        return SocketConnection(SocketClientv6(address, authkey))
+        try:
+            client = SocketClientv6(address, authkey)
+        except socket.error:
+            return None
+        return SocketConnection(client)
 
 else:
     def connectClientIPv6(*args):
         return BrokenConnection()
 
 if has_pipe:
-    ERROR_BAD_PIPE = 230, 'The pipe state is invalid.'
-    ERROR_PIPE_BUSY = 231, 'All pipe instances are busy.'
-    ERROR_NO_DATA = 232, 'The pipe is being closed.'
-    ERROR_PIPE_NOT_CONNECTED = 233, 'No process is on the other end of the pipe.'
-    ERROR_FILE_NOT_FOUND = 2, 'The system cannot find the file specified.'
 
     class PipeListener(Listener):
         ignorePipeErrorsWhenClosing = [ERROR_BAD_PIPE, ERROR_PIPE_BUSY, \
@@ -426,6 +428,24 @@ if has_pipe:
                 if err.args[0] in self.ignorePipeErrorsWhenClosing:
                     return
                 raise
+
+        def getConnectClient(self, address):
+            return ConnectionPossibility(connectClientPipe,
+                                         (address, self.authkey))
+
+        def wrapAcceptedConnection(self, connection):
+            return PipeConnection(connection)
+
+
+    def connectClientPipe(address, authkey):
+        try:
+            client = Client(address, 'AF_PIPE', authkey)
+        except WindowsError as e:
+            if e[0] == ERROR_FILE_NOT_FOUND[0]:
+                return None
+            raise
+        return PipeConnection(client)
+            
 
 
 class R(object):
@@ -480,18 +500,31 @@ class SocketConnection(ClientConnection):
         try:
             rl, wl, xl = select.select(l, l, l)
         except select.error as err:
-            if self._connection.closed or err.args[0] == 10038:
+            if self._connection.closed or err.args[0] == errno.ENOTSOCK:
                 raise EOFError('select errors - connection closed')
             print self._connection
             raise
         if rl or wl or xl:
             obj = self._connection.recv()
 
-
+if has_pipe:
+    
+    class PipeConnection(ClientConnection):
+        def call(self, aFunction, args, kw = {}):
+            try:
+                ClientConnection.call(self, aFunction, args, kw)
+            except IOError:
+                ty, err, tb = sys.exc_info()
+                if err.args[0] == ERROR_INVALID_HANDLE[0]:
+                    ## todo: test
+                    print 'PipeConnection>>connection broken'
+                    raise ConnectionBroken(IOError, *err.args)
+                else:
+                    raise ty, err, tb
 
 __all__ = ['ConnectionBroken', 'has_unix', 'has_ipv6', 'ClientConnection',
            'BaseConnection', 'BrokenConnection', 'IPv4Listener', 'R',
-           'has_pipe', 'SocketConnection'
+           'has_pipe', 'SocketConnection', 'PipeConnection'
            ]
 if has_unix:
     __all__.append('UnixListener')

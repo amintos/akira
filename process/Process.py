@@ -27,14 +27,14 @@ class Process(object):
     def __init__(self, identityString, pid, hostName, creationTime,
                  listeners = []):
         assert isinstance(identityString, basestring), 'The identity must be a string'
-        self._identityString = identityString
+        self.__identityString = identityString
         self.pid = pid
         self.hostName = hostName
         self.creationTime = creationTime
 
     @property
     def identityString(self):
-        return self._identityString
+        return self.__identityString
 
     @picklableAttribute
     def call(self, aFunction, args, kw = {}):
@@ -68,6 +68,10 @@ class Process(object):
 
     def __str__(self):
         return 'Process %s on %s' % (self.pid, self.hostName)
+
+    def printPy(self):
+        import pickle
+        print 'o = __import__("pickle").loads(%r)' % pickle.dumps(self)
 
 Process.ProcessClassAfterUnpickling = Process
 
@@ -148,6 +152,7 @@ class _ThisProcess(Process):
         Process.__init__(self, _id, os.getpid(), socket.gethostname(),
                          time.time())
         self._listeners = []
+        self._knownProcesses = set()
     
     @picklableAttribute
     def call(self, aFunction, args, kw = {}):
@@ -222,6 +227,21 @@ class _ThisProcess(Process):
 
     def addConnection(self, aConnection):
         pass
+
+    def knowsProcess(self, anotherProcess):
+        self._knownProcesses.add(anotherProcess)
+
+    @property
+    def knownProcesses(self):
+        return self._knownProcesses
+
+    def stopListening(self):
+        while self._listeners:
+            listener = self._listeners.pop()
+            listener.close()
+
+    def __str__(self):
+        return 'This' + Process.__str__(self)
 
 IDENTITYLENGTH = 20
 
