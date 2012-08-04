@@ -33,15 +33,10 @@ def freeObject(_id):
     if proxyObjectDatabase.pop(_id, l) is l:
         raise ObjectNotFound('the object with id %r was deleted' % _id)
 
-def loadDirectReferenceOrObject(process, _id):
+def loadReferenceOrObject(process, _id, cls, *args):
     if process == Process.thisProcess:
         return onlyInThisProcess(loadObject(_id))
-    return DirectRemoteReference(process, _id)
-
-def loadIndirectReferenceOrObject(process, _id, proxy):
-    if process == Process.thisProcess:
-        return onlyInThisProcess(loadObject(_id))
-    return IndirectRemoteReference(process, _id, proxy)
+    return cls(process, _id, *args)
 
 class LocalObject(ProxyWithExceptions):
     exceptions = ('__reduce__','__reduce_ex__')
@@ -54,10 +49,17 @@ class LocalObject(ProxyWithExceptions):
     @insideProxy
     def __reduce__(self):
         _id = storeObject(self.enclosedObject)
-        return loadDirectReferenceOrObject, (self.process, _id)
+        return loadReferenceOrObject, (self.process, _id, \
+                                       DirectRemoteReference)
 
     def __reduce_ex__(self, proto):
         return self.__reduce__()
+
+
+    @insideProxy
+    def __repr__(self):
+        return self.__class__.__name__
+
 
 def callAttr(objId, attr, args, kw):
     return apply(getattr(loadObject(objId), attr), args, kw)
@@ -78,9 +80,13 @@ class DirectRemoteReference(ProxyWithExceptions):
 
     @insideProxy
     def __reduce__(self):
-        selfref = LocalObject(outsideProxy(self), self.process)
-        return loadIndirectReferenceOrObject, (self.process, self.id, \
-                                               selfref)
+        selfref = self.getSelfReference()
+        return loadReferenceOrObject, (self.process, self.id, \
+                                       IndirectRemoteReference, selfref)
+
+    @insideProxy
+    def getSelfReference(self):
+        return LocalObject(outsideProxy(self))
 
     @insideProxy
     def __reduce_ex__(self, proto):
@@ -88,17 +94,25 @@ class DirectRemoteReference(ProxyWithExceptions):
 
     @insideProxy
     def __del__(self):
-        print '__del__'
         self.process.call(freeObject, (self.id,))
 
     @insideProxy
     def call(self, functionName, args, kw):
         return self.process.call(callAttr, (self.id, functionName, args, kw))
 
+    @insideProxy
+    def __repr__(self):
+        return self.__class__.__name__ + ': ' + str(self.id)
+
 def assignNewId(_id, callback):
     callback(storeObject(loadObject(_id)))
 
 class IndirectRemoteReference(DirectRemoteReference):
+
+    @insideProxy
+    def __repr__(self):
+        return self.__class__.__name__ + ': ' + str(self.id)
+
 
     @insideProxy
     def __init__(self, process, _id, proxy):
@@ -112,10 +126,16 @@ class IndirectRemoteReference(DirectRemoteReference):
 
     @insideProxy
     def setId(self, newId):
-        print 'setId', self.id, newId
         self.id = newId
-        del self.proxy
+        self.proxy = None
         
+    @insideProxy
+    def getSelfReference(self):
+        proxy = self.proxy
+        if proxy is None:
+            proxy = outsideProxy(self)
+        return LocalObject(proxy)
+
 
 def onlyInThisProcess(obj):
     remoteObject = LocalObject(obj)
