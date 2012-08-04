@@ -4,7 +4,7 @@ import itertools
 import thread
 import Process
 
-from VeryPicklableObject import picklable
+from VeryPicklableObject import picklable, picklableAttribute
 
 class DatabaseReference(object):
     def __init__(self, database, process, _id, *args, **kw):
@@ -36,6 +36,9 @@ class DatabaseReference(object):
     def _delete(self):
         pass
 
+    def __del__(self):
+        self._delete()
+
 
 class LocalDatabaseReference(DatabaseReference):
 
@@ -62,10 +65,8 @@ class LocalDatabaseReference(DatabaseReference):
 ##        print '__reduce__', self, args
         return self.database.loadFromLocalReference, args
 
-    def __del__(self):
-##        if self.database.hasObjectById(self.id):
-##            print "__del__ %s" % self
-            self.database.freeObjectById(self.id)
+    def _delete(self):
+        self.database.freeObjectById(self.id)
 
 class RemoteDatabaseReference(DatabaseReference):
 
@@ -84,10 +85,8 @@ class RemoteDatabaseReference(DatabaseReference):
         args = self.process, self.id, self.storedLocally()
         return self.database.loadFromRemoteReference, args
 
-    def __del__(self):
-        ## todo
-        pass
-
+    def _delete(self):
+        self.process.call(self.database.freeObjectById, (self.id,))
     
 def sendNewId(fromProcess, localReference, toProcess, ref2ref):
     assert localReference.isLocal()
@@ -109,8 +108,9 @@ class IndirectRemoteDatabaseReference(RemoteDatabaseReference):
 
     def init(self, reference):
         self.reference = reference
-        self.getNewId()
         self.receivedNewReference = False
+        self.getNewId()
+
 
     def getNewId(self):
         assert self.reference is not None
@@ -130,11 +130,13 @@ class IndirectRemoteDatabaseReference(RemoteDatabaseReference):
         assert self.process == reference.process
         self.id = reference.id
         self.reference = reference
-        receivedNewReference = True
-##        print 'receivedNewReference', reference
+        self.receivedNewReference = True
 
-    def __del__(self):
-        pass
+    def _delete(self):
+        assert self.receivedNewReference, 'there should be a callback'\
+               ' referencing me while I wait for the callback'
+        del self.reference
+
 
 class LocalObjectDatabase(object):
 
@@ -174,6 +176,7 @@ class LocalObjectDatabase(object):
         obj = self.objectStore.get(_id, l)
         return obj is not l
 
+    @picklableAttribute
     def freeObjectById(self, _id):
         l = []
         if self.objectStore.pop(_id, l) is l:

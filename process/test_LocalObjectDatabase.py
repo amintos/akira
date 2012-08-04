@@ -113,11 +113,11 @@ class MockProcess(object):
 
     def without(self, func):
         _proc = proc
-        _proc.__exit__()
+        if _proc:_proc.__exit__()
         try:
             return func()
         finally:
-            _proc.__enter__()
+            if _proc:_proc.__enter__()
 
     @classmethod
     def reset(cls):
@@ -297,6 +297,7 @@ class ReferenceTest(DatabaseTest):
             with p:
                 ref = loads(s)
                 self.assertGreater(ref.id, _id)
+                self.assertTrue(ref.isDirect())
                 _id = ref.id
                 s = dumps(ref)
         with self.p1:
@@ -308,6 +309,8 @@ class ReferenceTest(DatabaseTest):
     def test_garbage_collect_local(self):
         self.ref1._delete()
         self.assertRaises(ObjectNotFound, lambda: self.ref1.value)
+        self.ref1._delete = lambda:None
+
         
     def test_garbage_collect_remote(self):
         s = dumps(self.ref1)
@@ -319,6 +322,7 @@ class ReferenceTest(DatabaseTest):
             dr._delete()
             self.assertRaises(ObjectNotFound, lambda: \
                               self.db.loadObjectById(_id))
+            dr._delete = lambda:None
 
     def test_garbage_collect_indirect(self):
         s = dumps(self.ref1)
@@ -332,6 +336,7 @@ class ReferenceTest(DatabaseTest):
             ref._delete()
             self.assertRaises(ObjectNotFound, lambda: \
                               self.db.loadObjectById(_id))
+            ref._delete = lambda:None
     
     def test_garbage_collect_indirect2(self):
         s = dumps(self.ref1)
@@ -347,6 +352,7 @@ class ReferenceTest(DatabaseTest):
             ref._delete()
             self.assertRaises(ObjectNotFound, lambda: \
                               self.db.loadObjectById(_id))
+            ref._delete = lambda:None
     
 if __name__ == '__main__':
     t = None # 'ReferenceTestBase.test_indirect_references_not_local'
