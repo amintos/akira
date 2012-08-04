@@ -138,6 +138,9 @@ class picklableInstancemethod(pickleableWithGetter):
 def getName(function):
     return 'PICKLABLE.' + type(function).__name__ + '.' + function.__name__
 
+class NameDuplication(NameError):
+    '''there already exists a variable with the given name'''
+    pass
 
 class _picklableFunction(pickleableWithGetter):
 
@@ -150,7 +153,8 @@ class _picklableFunction(pickleableWithGetter):
         outside = outsideProxy(self)
         if self.__name__ in function.func_globals and \
             not outside == function.func_globals[self.__name__]:
-            raise NameError('cannot mock a function that already exists in the module')
+            raise NameDuplication('cannot mock a function that already exists' \
+                                  ' in the module')
         function.func_globals[self.__name__] = outside
 
     @insideProxy
@@ -192,6 +196,20 @@ class picklableClassmethod(pickleableWithGetter):
 class picklableStaticmethod(picklableClassmethod):
     
     n = PicklableType(staticmethod)
+
+def picklableClass(cls, picklable):
+    module = __import__(cls.__module__)
+    name = cls.__name__
+    if not hasattr(module, name):
+        setattr(module, name, cls)
+    elif getattr(module, name) is not cls:
+        raise NameDuplication('class %r named %s already exists in module '\
+                              '%r named %s' % (cls, cls.__name__, module, \
+                                               module.__name__))
+    return cls
+
+picklable.addReplacement(type, picklableClass)
+
 
 #
 # pickle a function as attribute of a class or object

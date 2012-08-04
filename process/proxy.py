@@ -1,4 +1,4 @@
-
+import sys
 import magicMethods
 
 from SelfWrap import objectGetattributeFunction as insideProxy
@@ -6,6 +6,13 @@ from SelfWrap import getObject as outsideProxy
 
 
 _cached_classes = {} # object type : constructed
+
+def shortenTraceback():
+    ## copy this code to where you need it
+    ty, err, tb = sys.exc_info()
+    if tb.tb_next is not None:
+        tb = tb.tb_next ## shorten traceback
+    raise ty, err, tb
 
 class Proxy(object):
     '''Proxy(object)
@@ -35,7 +42,13 @@ this proxy puts all method calls through to the object
     def createMagicMethod(cls, methodName):
         @insideProxy
         def magicMethod(self, *args, **kw):
-            return self.call(methodName, args, kw)
+            try:
+                return self.call(methodName, args, kw)
+            except:
+                ty, err, tb = sys.exc_info()
+                if tb.tb_next is not None:
+                    tb = tb.tb_next ## shorten traceback
+                raise ty, err, tb
         magicMethod.__name__ = methodName
         setattr(cls, methodName, magicMethod)
 
@@ -50,7 +63,13 @@ this proxy puts all method calls through to the object
 
     @insideProxy
     def call(self, methodName, args, kw):
-        return getattr(self.enclosedObject, methodName)(*args, **kw)
+        try:
+            return getattr(self.enclosedObject, methodName)(*args, **kw)
+        except:
+            ty, err, tb = sys.exc_info()
+            if tb.tb_next is not None:
+                tb = tb.tb_next ## shorten traceback
+            raise ty, err, tb
 
 Proxy.afterClassCreation()
 
@@ -62,9 +81,15 @@ class ProxyWithExceptions(Proxy):
 
     @insideProxy
     def __getattribute__(self, name):
-        if name in self.exceptions:
-            return getattr(self, name)
-        return Proxy.__getattribute__(self, name)
+        try:
+            if name in self.exceptions:
+                return getattr(self, name)
+            return Proxy.__getattribute__(self, name)
+        except:
+            ty, err, tb = sys.exc_info()
+            if tb.tb_next is not None:
+                tb = tb.tb_next ## shorten traceback
+            raise ty, err, tb
 
 
 def isProxy(obj):
