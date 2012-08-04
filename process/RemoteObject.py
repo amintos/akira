@@ -142,6 +142,7 @@ def onlyInThisProcess(obj):
     if isProxy(obj):
         return remoteObject
     try:
+        # todo: test
         obj.__reduce__ = remoteObject.__reduce__
         obj.__reduce_ex__ = remoteObject.__reduce_ex__
     except AttributeError:
