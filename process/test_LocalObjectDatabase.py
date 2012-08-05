@@ -468,7 +468,6 @@ class ReferenceTestRaceCondition_exists_fail(ReferenceTestRaceCondition):
         self.assertRaises(ObjectNotFound, 
                 lambda:self.four_processes_asynchronous())
 
-        
 
 if __name__ == '__main__':
     t = None # 'ReferenceTestBase.test_indirect_references_not_local'

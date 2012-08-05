@@ -1,3 +1,9 @@
+'''This module together with the rstToPdf module converts the .rst files to html
+
+It will automatically install all dependencies.
+
+'''
+
 from rstToPdf import *
 
 

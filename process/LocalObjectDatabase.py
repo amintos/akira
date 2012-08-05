@@ -2,7 +2,6 @@
 import traceback
 import itertools
 import thread
-import Process
 
 from VeryPicklableObject import picklable, picklableAttribute
 
@@ -120,11 +119,7 @@ class IndirectRemoteDatabaseReference(RemoteDatabaseReference):
 
     def storedLocally(self):
         ref = self.database.newLocalReference()
-        if self.reference is None:
-            print 'ahsdfladsjhfjkasdfk'
-            ref.value = self
-        else:
-            ref.value = self.reference
+        ref.value = self.reference
         return ref
 
     def getIdFromReference(self, reference):
@@ -140,6 +135,12 @@ class IndirectRemoteDatabaseReference(RemoteDatabaseReference):
 
 
 class LocalObjectDatabase(object):
+    '''this class implements a singleton
+If you do not want a singleton:
+overwrite storeUnderName(), getName() and __reduce__()
+and make the objects globally available.
+
+'''
 
     LocalDatabaseReference = LocalDatabaseReference
     RemoteDatabaseReference = RemoteDatabaseReference
@@ -153,8 +154,11 @@ class LocalObjectDatabase(object):
     def __init__(self):
         self.__id_lock = thread.allocate_lock()
         self.__id_counter = itertools.count()
-        self.objectStore = {} # id: obj
+        self.objectStore = self.newObjctStore() # id: obj
         self.storeUnderName()
+
+    def newObjectStore(self):
+        return {}
         
     def getId(self):
         with self.__id_lock:
@@ -197,8 +201,9 @@ class LocalObjectDatabase(object):
                'there can only be one database under this name'
         setattr(module, name, self)
 
-    def getName(self):
-        name = self.__class__.__name__
+    @classmethod
+    def getName(cls):
+        name = cls.__name__
         return name[0].lower() + name[1:]
 
     @classmethod
@@ -247,3 +252,5 @@ class LocalObjectDatabase(object):
         
     def __str__(self):
         return '%s.%s' % (self.getModule().__name__, self.getName())
+
+import Process
