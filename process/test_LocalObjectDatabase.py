@@ -68,6 +68,8 @@ from R import R
 
 proc = None
 class MockProcess(object):
+    '''this is a mock process
+the context handlers make it the ThisProcess within'''
 
     proc = {}
 
@@ -171,24 +173,7 @@ class TestDB2(LocalObjectDatabase):
     def __str__(self):
         return self.namexxx
 
-class LocalDatabaseReference2(LocalDatabaseReference):
-    deleted = False
-    def _delete(self):
-        self.deleted = True    
-
-class IndirectRemoteDatabaseReference2(IndirectRemoteDatabaseReference):
-    deleted = False
-    def _delete(self):
-        self.deleted = True
-    
-class RemoteDatabaseReference2(RemoteDatabaseReference):
-    deleted = False
-    def _delete(self):
-        self.deleted = True
-
-
-
-class ReferenceTest(DatabaseTest):
+class ReferenceTestBase(DatabaseTest):
 
     DBClass = TestDB2
 
@@ -220,6 +205,8 @@ class ReferenceTest(DatabaseTest):
     def tearDown(self):
         DatabaseTest.tearDown(self)
         self.p1.__exit__()
+
+class ReferenceTest(ReferenceTestBase):
 
     def test_ref_process_is_mocked(self):
         self.assertTrue(self.ref1.process.isMock())
@@ -353,7 +340,136 @@ class ReferenceTest(DatabaseTest):
             self.assertRaises(ObjectNotFound, lambda: \
                               self.db.loadObjectById(_id))
             ref._delete = lambda:None
+
+class GarbageBase(object):
+    def __init__(self):
+        self.deleted = False
+    def _delete(self):
+        self.deleted = True
+
+class IndirectRemoteDatabaseReferenceGarbage(GarbageBase, IndirectRemoteDatabaseReference):
+    pass
+class DirectDatabaseReferenceGarbage(GarbageBase, RemoteDatabaseReference):
+    pass
+class LocalDatabaseReferenceGarbage(GarbageBase, LocalDatabaseReference):
+    pass
+
+
+class __del__calls_delete_Test(unittest.TestCase):
+
+    def assertDeletes(self, obj):
+        self.assertFalse(obj.deleted)
+        obj.__del__()
+        self.assertTrue(obj.deleted)
+
+    def test_local(self):
+        self.assertDeletes(LocalDatabaseReferenceGarbage())
+    def test_direct(self):
+        self.assertDeletes(DirectDatabaseReferenceGarbage())
+    def test_indirect(self):
+        self.assertDeletes(IndirectRemoteDatabaseReferenceGarbage())
+
+class ReferenceTestRaceCondition(ReferenceTestBase):
+    '''
+we have four processes
+process1 : obj
+process2 : direct reference
+process3 : indirect reference
+process4 : indirect reference
+
+if ref4 holds a reference to ref3 and not to the reference to ref3 in process4
+the following test should delete this reference first
+to simulate a  race condition
+This will cause the object to be deleted from the database although
+ref4 has the reference
+'''
+
+    def four_processes_asynchronous(self):
+        s = dumps(self.ref1)
+        self.p1.__exit__()
+        with self.p2:
+            s = dumps(loads(s))
+        with self.p3:
+            ref3 = loads(s)
+            s = dumps(ref3)
+        with self.p4:
+            ref4 = loads(s)
+        with self.p1:
+            del self.ref1
+        with self.p3:
+            ref3.getNewId_()
+        with self.p3:
+            del ref3
+        with self.p4:
+            ref4.getNewId_()
+            s = dumps(ref4)
+        with self.p1:
+            ref1 = loads(s)
+            self.assertEquals(ref1.value, self.obj)
+
+
+class IRDR3(IndirectRemoteDatabaseReference):
+    getNewIdCalled = False
+    def getNewId(self):
+        self.getNewIdCalled = True
+        IndirectRemoteDatabaseReference.getNewId(self)
+
+    def getNewId_(self):
+        assert self.getNewIdCalled
+        
+class TestDB3(TestDB2):
+    IndirectRemoteDatabaseReference = IRDR3
+
+
+class ReferenceTestRaceCondition_no(ReferenceTestRaceCondition):
+
+    DBClass = TestDB3
     
+    def test_four_processes_asynchronous(self):
+        self.four_processes_asynchronous()
+        
+
+class IRDRDeferred(IndirectRemoteDatabaseReference):
+    getNewIdCalled = False
+    def getNewId(self):
+        self.getNewIdCalled = True
+
+    def getNewId_(self):
+        IndirectRemoteDatabaseReference.getNewId(self)
+        
+class TestDB4(TestDB2):
+    IndirectRemoteDatabaseReference = IRDRDeferred
+
+class ReferenceTestRaceCondition_exists(ReferenceTestRaceCondition_no):
+    DBClass = TestDB4
+
+class IRDRDeferred_fail(IRDRDeferred):
+    def storedLocally(self):
+        ref = self.database.newLocalReference()
+        ref.value = self ## .reference
+        return ref
+
+class RDRDeferred_fail(RemoteDatabaseReference):
+
+    def _delete(self):
+        try:
+            RemoteDatabaseReference._delete(self)
+        except ObjectNotFound:
+            pass
+        
+class TestDB5(TestDB2):
+    IndirectRemoteDatabaseReference = IRDRDeferred_fail
+    RemoteDatabaseReference = RDRDeferred_fail
+
+class ReferenceTestRaceCondition_exists_fail(ReferenceTestRaceCondition):
+    DBClass = TestDB5
+
+    def test_four_processes_asynchronous_with_wrong_references(self):
+        self.assertRaises(ObjectNotFound, 
+                lambda:self.four_processes_asynchronous())
+
+        
+
 if __name__ == '__main__':
     t = None # 'ReferenceTestBase.test_indirect_references_not_local'
     unittest.main(defaultTest = t, exit = False, verbosity = 1)

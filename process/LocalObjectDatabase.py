@@ -121,6 +121,7 @@ class IndirectRemoteDatabaseReference(RemoteDatabaseReference):
     def storedLocally(self):
         ref = self.database.newLocalReference()
         if self.reference is None:
+            print 'ahsdfladsjhfjkasdfk'
             ref.value = self
         else:
             ref.value = self.reference
