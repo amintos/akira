@@ -11,7 +11,7 @@ assert Objectbase() is objectbase
 
 ## optimize: use weak db in some cases
 
-class Reference(ProxyWithExceptions):
+class Proxy(ProxyWithExceptions):
     exceptions = ('__reduce__', '__reduce_ex__')
 
     @insideProxy
@@ -25,11 +25,15 @@ class Reference(ProxyWithExceptions):
 ##        return self.method(self.reference, methodName, args, kw)
 
     @insideProxy
+    def getReference(self):
+        return self.reference
+
+    @insideProxy
     def __reduce__(self):
         return self.__class__, self.initArguments
 
     @classmethod
-    def isReference(cls, obj):
+    def isProxy(cls, obj):
         return issubclass(type(obj), cls)
 
 #
@@ -42,6 +46,8 @@ def _send_execute(reference, methodName, args, kw):
     return method(*args, **kw)
 
 def send(reference, methodName, args, kw):
+    '''only send the calls to the object.
+Nothing is returned, No Errors handled.'''
     reference.process.call(_send_execute, (reference, methodName, args, kw))
 
 #
@@ -50,6 +56,9 @@ def send(reference, methodName, args, kw):
 
 class Result(ApplyResult):
 
+    def __init__(self, callback = None):
+        ApplyResult.__init__(self, {}, callback)
+        
     def setValue(self, value):
         self._set(None, (True, value))
 
@@ -68,7 +77,9 @@ def _async_execute(resultReference, reference, methodName, args, kw):
     
 
 def async(reference, methodName, args, kw, callback = None):
-    result = ApplyResult({}, callback)
+    '''call the methods of the object.
+returns a Result object.'''
+    result = Result(callback)
     resultReference = objectbase.store(result)
     args = (resultReference, reference, methodName, args, kw)
     reference.process.call(_async_execute, args)
@@ -78,7 +89,10 @@ def async(reference, methodName, args, kw, callback = None):
 # proxy methods for synchronous send and receive
 #
 
-def sunc(*args):
+def sync(*args):
+    '''synchonously call the methods of the object.
+This is the typical communication of python.
+It can make the program slow.'''
     result = async(*args)
     return result.get()
 
@@ -87,9 +101,21 @@ def sunc(*args):
 #
 
 def callback(reference, methodName, args, kw):
+    '''call the methods of the object but pass a callback as first argument
+this callback receives the result.get() if no error occurred'''
     assert args, 'the callback must be the first argument'
     assert callable(args[0]), 'the callback must be the first argument'
     callback = args[0]
     methodArgs = args[1:]
     return async(reference, methodName, methodArgs, kw, callback = callback)
     
+
+def reference(obj, method, ProxyClass = Proxy):
+    '''reference an object and adapt communication to the method
+the object can also be a Reference. So the method can be changed'''
+    if Proxy.isProxy(obj):
+        reference = insideProxy(obj).getReference()
+    else:
+        reference = objectbase.store(obj)
+    return ProxyClass(reference, method)
+        
