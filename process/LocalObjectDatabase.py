@@ -154,7 +154,7 @@ and make the objects globally available.
     def __init__(self):
         self.__id_lock = thread.allocate_lock()
         self.__id_counter = itertools.count()
-        self.objectStore = self.newObjctStore() # id: obj
+        self.objectStore = self.newObjectStore() # id: obj
         self.storeUnderName()
 
     def newObjectStore(self):

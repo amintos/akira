@@ -11,18 +11,29 @@ assert Objectbase() is objectbase
 
 ## optimize: use weak db in some cases
 
+class BoundProxyMethod(object):
+    def __init__(self, call, reference, methodName):
+        self.call = call
+        self.reference = reference
+        self.methodName = methodName
+
+    def __call__(self, *args, **kw):
+        return self.call(self.reference, self.methodName, args, kw)
+
 class Proxy(ProxyWithExceptions):
     exceptions = ('__reduce__', '__reduce_ex__')
 
-    @insideProxy
-    def __init__(self, reference, method):
-        self.call = method
-        self.reference = reference
-        self.initArguments = reference, method
+    BoundProxyMethod = BoundProxyMethod
 
-##    @insideProxy
-##    def call(self, methodName, args, kw):
-##        return self.method(self.reference, methodName, args, kw)
+    @insideProxy
+    def __init__(self, call, reference):
+        self.call = call
+        self.reference = reference
+        self.initArguments = call, reference
+
+    @insideProxy
+    def call(self, methodName, args, kw):
+        return self.method(self.reference, methodName, args, kw)
 
     @insideProxy
     def getReference(self):
@@ -35,6 +46,14 @@ class Proxy(ProxyWithExceptions):
     @classmethod
     def isProxy(cls, obj):
         return issubclass(type(obj), cls)
+
+    @insideProxy
+    def __getattribute__(self, name):
+        return self.bindMethod(name)
+
+    @insideProxy
+    def bindMethod(self, name):
+        return self.BoundProxyMethod(self.call, self.reference, name)
 
 #
 # proxy methods for asynchronous send only
@@ -108,7 +127,11 @@ this callback receives the result.get() if no error occurred'''
     callback = args[0]
     methodArgs = args[1:]
     return async(reference, methodName, methodArgs, kw, callback = callback)
-    
+
+
+#
+# creating references
+#
 
 def reference(obj, method, ProxyClass = Proxy):
     '''reference an object and adapt communication to the method
@@ -117,5 +140,6 @@ the object can also be a Reference. So the method can be changed'''
         reference = insideProxy(obj).getReference()
     else:
         reference = objectbase.store(obj)
-    return ProxyClass(reference, method)
+    return ProxyClass(method, reference)
         
+__all__ = ['reference', 'callback', 'sync', 'async', 'send', 'Proxy']
