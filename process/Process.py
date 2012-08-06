@@ -93,10 +93,13 @@ class ProcessInOtherProcess(Process):
         self._lock = thread.allocate_lock()
         self._emptyCallQueueThread = None
         self._callQueue = None
-        self._markedAsDead = False
+        self._markedAsAlive = False
 
     def markAsDead(self):
         self._markedAsDead = True
+        
+    def markAsAlive(self):
+        self._markedAsDead = False
 
     def isAlive(self):
         return not self._markedAsDead
@@ -116,18 +119,50 @@ class ProcessInOtherProcess(Process):
         aConnection.toProcess(self)
         self._connections.append(aConnection)
 
+    def _connect(self, connectionPossibility, notify):
+        try:
+            connection = connectionPossibility()
+            if connection:
+##                print 'addConnection', connection
+                self.addConnection(connection)
+        finally:
+            notify()
+
     def newConnection(self):
-        for possibility in self._connectionPossibilities:
-            aConnection = possibility()
-            if aConnection is not None:
-                self.addConnection(aConnection)
-                return aConnection
-        return None
+        '''create a new connection'''
+        connectionPossibilities = self._connectionPossibilities[:]
+        if not connectionPossibilities:
+            return 
+        l = thread.allocate_lock()
+        l2 = thread.allocate_lock()
+        def notify():
+            released = False
+            for p in connectionPossibilities[1:]:
+##                print 'relesed:', released
+                if not released and self.hasConnections():
+##                    print 'release'
+                    l.release()
+                    released = True
+                yield
+            if not released: l.release()
+            yield
+        generator = notify()
+        def notify():
+            with l2:
+                next(generator)
+        l.acquire(False)
+        for possibility in connectionPossibilities:
+            thread.start_new(self._connect, (possibility, notify))
+        l.acquire()
+##        print 'hasconnection!!!'
 
     @picklableAttribute
     def call(self, function, args, kw = {}):
         aConnection = self.chooseConnection()
-        print 'connectionChosen'
+        if aConnection is None:
+            self.queueCall(function, args, kw)
+            return 
+##        print 'connectionChosen'
         try:
             aConnection.call(function, args, kw)
             return
@@ -136,7 +171,7 @@ class ProcessInOtherProcess(Process):
             self.removeConnection(aConnection)
 
     def queueCall(self, function, args, kw = {}):
-        print 'QueueCall'
+##        print 'QueueCall'
         if not self._emptyCallQueueThread: # speed up - no lock
             with self._lock:
                 if not self._callQueue:
@@ -152,12 +187,16 @@ class ProcessInOtherProcess(Process):
     def _emptyCallQueue(self, queue):
         t = time.time()
         ttl = lambda: t + self.minimumConnectionTrySeconds - time.time()
-        while 0 < ttl():
+        for i in range(self.callAttempts):
             call = queue.get(timeout = ttl())
-            print 'call'
+##            print 'create connection'
+            if not self.hasConnections():
+                self.newConnection()
+##            print 'call'
             self.call(*call)
+            if  0 < ttl():
+                break
         self.markAsDead()
-        raise ProcessIsDead(str(self), self)
     
     def removeConnection(self, aConnection):
         for i, ownConnection in reversed(list(enumerate(self._connections))):
@@ -171,15 +210,10 @@ class ProcessInOtherProcess(Process):
     def chooseConnection(self):
         'this raises'
         ## todo: better algorithm for aConnection attempts & choosing
-        if not self.hasConnections():
-##            print 'new'
-            aConnection = self.newConnection()
-        else:
-##            print 'old'
-            aConnection = self._connections[0]
-        if aConnection is None:
-            raise ProcessCannotConnect('all connection possibilities failed')
-        return aConnection
+        connections = self._connections[:1]
+        if connections:
+            return connections[0]
+        return None
 
 def addConnectionPossibilities(process, possibilities):
     for possibility in possibilities:

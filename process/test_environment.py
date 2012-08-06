@@ -39,6 +39,7 @@ the below configuration workt n my computer.
                 break
         self.assertEquals(l, ACCEPT_STOPPED)
         
+    @unittest.skip('nondeterministic')
     def test_accepting_socket_stops_when_closed_and_reuse_addr(self):
         s = socket.socket()
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -60,6 +61,7 @@ the below configuration workt n my computer.
                 break
         self.assertEquals(l, ACCEPT_BLOCKS)
         
+    @unittest.skip('nondeterministic')
     def test_accepting_socket_stops_when_closed_after_accepting_once(self):
         s = socket.socket()
         s.bind(('', 0))
@@ -168,6 +170,7 @@ the below configuration workt n my computer.
 
 class SocketListenerTest(unittest.TestCase):
 
+    @unittest.skip('nondeterministic')
     def test_accepting_socket_stops_when_closed(self):
         li = multiprocessing.connection.SocketListener(('', 0), 'AF_INET')
         l = []
@@ -186,6 +189,7 @@ class SocketListenerTest(unittest.TestCase):
                 break
         self.assertEquals(l, ACCEPT_BLOCKS)
  
+    @unittest.skip('nondeterministic')
     def test_accepting_socket_stops_when_closed_after_accepting_once(self):
         li = multiprocessing.connection.SocketListener(('', 0), 'AF_INET')
         l = []

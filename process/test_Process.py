@@ -8,6 +8,8 @@ import pickle
 from Process import thisProcess
 from Listener import ConnectionPossibility, BrokenConnection
 
+from test_multi_Process import timeout, TIMEOUT
+
 class ProcessTest(unittest.TestCase):
 
     def test_equal(self):
@@ -62,6 +64,8 @@ class ProcessClassAfterUnpickling1(Process.Process):
 
 class MockProcess2(Process._ThisProcess):
     ProcessClassAfterUnpickling = ProcessClassAfterUnpickling1
+
+            
 
 class MockListener2(MockListener1):
 
@@ -132,10 +136,28 @@ class MockConnection1(object):
     def isProcess(self):
         return True
 
+class MockQueue(object):
+    @staticmethod
+    def get(*args, **kw):
+        return (lambda: None, (), {})
+
+class ProcessInOtherProcess(Process.ProcessInOtherProcess):
+    minimumConnectionTrySeconds = 0.1
+    mock_dead = False
+
+    def _emptyCallQueue(self, queue):
+        Process.ProcessInOtherProcess._emptyCallQueue(self, queue)    
+        self.mock_dead = True
+            
 class ProcessInOtherProcessTest(unittest.TestCase):
 
     def setUp(self):
-        self.p = Process.ProcessInOtherProcess('', 1,1,1)
+        self.p = ProcessInOtherProcess('', 1,1,1)
+
+    def assertIsDead(self):
+        timeout(lambda:self.p.mock_dead, False)
+        self.assertTrue(self.p.mock_dead)
+        self.assertFalse(self.p.isAlive())
 
     def test_establishConnectionFails(self):
         self.p.addConnectionPossibility(ConnectionPossibility(setValue, (1,)))
@@ -151,24 +173,31 @@ class ProcessInOtherProcessTest(unittest.TestCase):
     def test_establishConnectionWorks(self):
         self.p.addConnectionPossibility(ConnectionPossibility(setValue, (1,)))
         self.p.addConnectionPossibility(ConnectionPossibility(MockConnection1))
-        c = self.p.newConnection()
+        self.p.newConnection()
+        c = self.p.chooseConnection()
         self.assertTrue(c.isMockConnection())
 
     def test_connection_knows_about_endpoints(self):
         self.p.addConnectionPossibility(ConnectionPossibility(MockConnection1))
-        c = self.p.newConnection()
+        self.p.newConnection()
+        c = self.p.chooseConnection()
         self.assertEquals(c._from, thisProcess)
         self.assertEquals(c._to, self.p)
         
     def test_no_connection_can_be_established(self):
-        self.assertRaises(Process.ProcessCannotConnect, \
-                          lambda: self.p.call(setValue, ('x',)))
+        self.p.call(setValue, ('x',))
+        self.assertIsDead()
+        self.assertNotEquals(value, 'x')
 
     def test_no_connection_can_be_established2(self):
         cp = ConnectionPossibility(BrokenConnection, ())
         self.p.addConnectionPossibility(cp)
-        self.assertRaises(Process.ProcessCannotConnect, \
-                          lambda: self.p.call(setValue, ('x',)))
+        self.p.call(setValue, ('x',))
+        self.assertIsDead()
+        self.assertNotEquals(value, 'x')
+
+
+
 
 class setConnectionEndpointsAlgorithmTest(unittest.TestCase):
 
