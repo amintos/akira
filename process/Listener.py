@@ -19,10 +19,14 @@ import TopConnection
 
 import select
 
+# due to an race-condition in test_reference
+# the process closes but does not close the pipe
+pipes_are_supported = False
+
 has_ipv4 = hasattr(socket, 'AF_INET')
 has_ipv6 = socket.has_ipv6
 has_unix = 'AF_UNIX' in connection_families
-has_pipe = 'AF_PIPE' in connection_families
+has_pipe = 'AF_PIPE' in connection_families and pipes_are_supported
 
 if has_pipe:
     from windowsErrors import *
@@ -436,10 +440,15 @@ if has_pipe:
         def wrapAcceptedConnection(self, connection):
             return PipeConnection(connection)
 
+        def __del__(self):
+            self.close()
+
 
     def connectClientPipe(address, authkey):
+        print 'connectClientPipe', address
         try:
             client = Client(address, 'AF_PIPE', authkey)
+            print 'connected'
         except WindowsError as e:
             if e[0] == ERROR_FILE_NOT_FOUND[0]:
                 return None
@@ -493,16 +502,30 @@ class ClientConnection(BaseConnection):
             else:
                 time.sleep(0.001)
 
+    def __del__(self):
+        self.close()
+
 class SocketConnection(ClientConnection):
+
+    def call(self, aFunction, args, kw = {}):
+        try:
+            return ClientConnection.call(self, aFunction, args, kw)
+        except IOError as err:
+            if self.isClosedError(err):
+                raise ConnectionBroken(err, 'the socket connection was closed.')
+            raise
+            
+    def isClosedError(self, err):
+        return self._connection.closed or err.args[0] == errno.ENOTSOCK
     
     def acceptObject(self):
         l = [self._connection]
         try:
             rl, wl, xl = select.select(l, l, l)
         except select.error as err:
-            if self._connection.closed or err.args[0] == errno.ENOTSOCK:
+            if self.isClosedError(err):
                 raise EOFError('select errors - connection closed')
-            print self._connection
+            print 'error in', self._connection
             raise
         if rl or wl or xl:
             obj = self._connection.recv()
@@ -517,7 +540,8 @@ if has_pipe:
                 ty, err, tb = sys.exc_info()
                 if err.args[0] == ERROR_INVALID_HANDLE[0]:
                     ## todo: test
-                    print 'PipeConnection>>connection broken'
+                    print aFunction
+                    print '[%s]>>connection broken' % self
                     raise ConnectionBroken(IOError, *err.args)
                 else:
                     raise ty, err, tb

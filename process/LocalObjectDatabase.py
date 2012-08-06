@@ -61,7 +61,6 @@ class LocalDatabaseReference(DatabaseReference):
 
     def __reduce__(self):
         args = (self.process, self.duplicateId())
-##        print '__reduce__', self, args
         return self.database.loadFromLocalReference, args
 
     def _delete(self):

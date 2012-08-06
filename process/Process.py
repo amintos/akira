@@ -2,16 +2,22 @@ import socket
 import time
 import thread
 import os
+import Queue
+import threading
 from R import R
 
 from VeryPicklableObject import picklableAttribute
 import Listener
 from setConnectionEndpointsAlgorithm import setConnectionEndpoints
+from markAsDeadAlgorithm import markAsDead
 
 _cachedProcesses = {}
 _cachedProcessesLock = thread.allocate_lock()
 
 class ProcessCannotConnect(Listener.ConnectionBroken):
+    pass
+
+class ProcessIsDead(ProcessCannotConnect):
     pass
 
 def getProcess(identityString, ProcessClass, args = (), kw = {}):
@@ -60,8 +66,11 @@ class Process(object):
     def __le__(self, other):
         return self.creationTime < other.creationTime
 
+    def thisProcess(self):
+        return thisProcess
+
     def isThisProcess(self):
-        return thisProcess is self
+        return self.thisProcess() is self
 
     def isProcess(self):
         return True
@@ -73,12 +82,24 @@ Process.ProcessClassAfterUnpickling = Process
 
 class ProcessInOtherProcess(Process):
 
-    callAttempts = 10
+    callAttempts = 3
+    ## seconds to try to reestablish connection to the process
+    minimumConnectionTrySeconds = 20
 
     def __init__(self, *args):
         Process.__init__(self, *args)
         self._connectionPossibilities = []
         self._connections = []
+        self._lock = thread.allocate_lock()
+        self._emptyCallQueueThread = None
+        self._callQueue = None
+        self._markedAsDead = False
+
+    def markAsDead(self):
+        self._markedAsDead = True
+
+    def isAlive(self):
+        return not self._markedAsDead
 
     def addConnectionPossibility(self, possibility):
         self._connectionPossibilities.append(possibility)
@@ -105,16 +126,39 @@ class ProcessInOtherProcess(Process):
 
     @picklableAttribute
     def call(self, function, args, kw = {}):
-        for i in xrange(self.callAttempts):
-            aConnection = self.chooseConnection()
-            try:
-                aConnection.call(function, args, kw)
-                return
-            except Listener.ConnectionBroken:
-                self.removeConnection(aConnection)
-        raise ProcessCannotConnect('tried to connect %i times but failed' % \
-                                   self.callAttempts)
+        aConnection = self.chooseConnection()
+        print 'connectionChosen'
+        try:
+            aConnection.call(function, args, kw)
+            return
+        except Listener.ConnectionBroken:
+            self.queueCall(function, args, kw)
+            self.removeConnection(aConnection)
 
+    def queueCall(self, function, args, kw = {}):
+        print 'QueueCall'
+        if not self._emptyCallQueueThread: # speed up - no lock
+            with self._lock:
+                if not self._callQueue:
+                    self._callQueue = queue = Queue.Queue()
+                else: queue = self._callQueue
+                if not self._emptyCallQueueThread:
+                    self._emptyCallQueueThread = thread = threading.Thread(
+                        target = self._emptyCallQueue,
+                        args = (queue,))
+                    thread.start()
+        self._callQueue.put((function, args, kw))
+
+    def _emptyCallQueue(self, queue):
+        t = time.time()
+        ttl = lambda: t + self.minimumConnectionTrySeconds - time.time()
+        while 0 < ttl():
+            call = queue.get(timeout = ttl())
+            print 'call'
+            self.call(*call)
+        self.markAsDead()
+        raise ProcessIsDead(str(self), self)
+    
     def removeConnection(self, aConnection):
         for i, ownConnection in reversed(list(enumerate(self._connections))):
             if ownConnection == aConnection:
@@ -128,8 +172,10 @@ class ProcessInOtherProcess(Process):
         'this raises'
         ## todo: better algorithm for aConnection attempts & choosing
         if not self.hasConnections():
+##            print 'new'
             aConnection = self.newConnection()
         else:
+##            print 'old'
             aConnection = self._connections[0]
         if aConnection is None:
             raise ProcessCannotConnect('all connection possibilities failed')

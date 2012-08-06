@@ -1,0 +1,4 @@
+
+
+def markAsDead(process):
+    pass
