@@ -136,7 +136,7 @@ this callback receives the result.get() if no error occurred'''
 def reference(obj, method, ProxyClass = Proxy):
     '''reference an object and adapt communication to the method
 the object can also be a Reference. So the method can be changed'''
-    if Proxy.isProxy(obj):
+    if ProxyClass.isProxy(obj):
         reference = insideProxy(obj).getReference()
     else:
         reference = objectbase.store(obj)

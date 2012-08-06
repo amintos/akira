@@ -7,6 +7,9 @@ from pickle import dumps, loads
 
 from LocalObjectDatabase import *
 
+from MockProcess import *
+
+
 class TestDatabase1(LocalObjectDatabase):
     pass
 
@@ -64,111 +67,27 @@ def dl(obj):
     import pickle
     return pickle.loads(pickle.dumps(obj))
 
-from R import R
-
-proc = None
-class MockProcess(object):
-    '''this is a mock process
-the context handlers make it the ThisProcess within'''
-
-    proc = {}
-
-    def __init__(self, name):
-        self.proc.setdefault(name, self)
-        self.name = name
-        self.db = None
-        self.local = False
-
-    def isThisProcess(self):
-        return self.local
-
-    def call(self, *args):
-##        print 'dump -->'
-        s = dumps(R(args))
-##        print '<-- dump'
-        def g():
-            with self.proc[self.name]:
-                ## use the original process
-##                print 'load -->'
-                loads(s)
-##                print '<-- load'
-        self.without(g)
-        
-
-    def __enter__(self):
-        global proc
-##        print 'enter', proc, self
-        assert proc is None or proc is self
-        proc = self
-        self.local = True
-
-    def __reduce__(self):
-        return loadProc, (self.name,)
-
-    def __exit__(self, *args):
-##        print 'exit', self
-        self.local = False
-        global proc
-        proc = None
-
-    def isMock(self): return True
-
-    def without(self, func):
-        _proc = proc
-        if _proc:_proc.__exit__()
-        try:
-            return func()
-        finally:
-            if _proc:_proc.__enter__()
-
-    @classmethod
-    def reset(cls):
-        global proc
-        proc = None
-        cls.proc = {}
-
-    def __repr__(self):
-        return 'MP[%s]' % (self.name,)
-
-    def __eq__(self, other):
-        return self.name == other.name
-
-
-class MockInOtherProcess(MockProcess):
-    def __repr__(self):
-        return 'MIOP[%s]' % (self.name,)
-
-
-MockProcess.MockInOtherProcess = MockInOtherProcess
-
-def loadProc(name):
-    assert proc is not None
-    if name == proc.name:
-        return proc
-    l = proc.MockInOtherProcess
-    return proc.without(lambda: l(name))
-
 def loadDB():
-    assert proc is not None and proc.db is not None
-    if proc.db:
-        return proc.db
+    assert MockProcess.current() is not None and MockProcess.current().db is not None
+    if MockProcess.current().db:
+        return MockProcess.current().db
 
 class TestDB2(LocalObjectDatabase):
 
     def localProcess(self):
-        assert proc is not None
-        return proc
+        assert MockProcess.current() is not None
+        return MockProcess.current()
 
     def storeUnderName(self):
-        assert proc.db is None
-        proc.db = self
+        assert MockProcess.current().db is None
+        MockProcess.current().db = self
 
     def getName(self):
         return loadDB, ()
 
     def delete(self):
-        if proc:
-            proc.db = None
+        if MockProcess.current():
+            MockProcess.current().db = None
 
     def __str__(self):
         return self.namexxx
