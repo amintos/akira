@@ -1,7 +1,12 @@
 
+import Listener
+
 def setConnectionEndpoints(aConnection):
     # this is called on the other side
-    aConnection.call(connectToProcess, (Process.thisProcess, aConnection))
+    try:
+        aConnection.call(connectToProcess, (Process.thisProcess, aConnection))
+    except Listener.ConnectionBroken:
+        pass
 
 def connectToProcess(aProcessInOtherProcess, aConnection):
     # aProcessInOtherProcess is now a shadow
@@ -9,7 +14,10 @@ def connectToProcess(aProcessInOtherProcess, aConnection):
         aConnection._tag_setConnectionEndpointsWasHere = True
         # connection already knows where it is connected to
         aConnection.toProcess(aProcessInOtherProcess)
-        aConnection.call(connectToProcess, (Process.thisProcess, aConnection))
+        try:
+            aConnection.call(connectToProcess, (Process.thisProcess, aConnection))
+        except Listener.ConnectionBroken:
+            pass
     aConnection.fromProcess(Process.thisProcess)
     aProcessInOtherProcess.addConnection(aConnection)
     Process.thisProcess.knowsProcess(aProcessInOtherProcess)

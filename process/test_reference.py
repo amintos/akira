@@ -111,11 +111,8 @@ from another process to local references of this process.
 
     @classmethod
     def tearDownClass(cls):
-        print 'close'
         cls.pool.close()
-        print 'closed'
         cls.pool.join()
-        print 'joined'
 
     def setUp(self):
         global value
@@ -262,14 +259,10 @@ class CallbackTest(TestBase):
         self.assertEqual(value, ('s', 3))
 
 
-##del SendTest
-##del SyncTest
-##del CallbackTest
-##del AsyncTest
         
 if __name__ == '__main__':
     import thread
     defaultTest = None#'SyncTest.test_wait'#None#'AsyncTest.test_real_async_with_wait'
-    kw = dict(defaultTest = defaultTest, exit = False, verbosity = 2)
+    kw = dict(defaultTest = defaultTest, exit = False, verbosity = 1)
     unittest.main(**kw)
 ##    _id = thread.start_new(unittest.main, (), kw)

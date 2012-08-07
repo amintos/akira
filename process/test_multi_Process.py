@@ -27,7 +27,7 @@ def setValue(aValue):
 
 def sendArgsBack((toProcess, args)):
     toProcess.call(recieveArgs,(thisProcess, args))
-    time.sleep(0.05) ## let other processes pull from queue
+    time.sleep(0.1) ## let other processes pull from queue
 ##    timeout(toProcess in thisProcess.knownProcesses, False)
 ##    assert toProcess in thisProcess.knownProcesses
 
@@ -76,7 +76,11 @@ class CommunicateTest(unittest.TestCase):
         self.assertGreaterEqual(len(thisProcess.knownProcesses), self.PROCESSES)
         for process, arg in answers:
             self.assertIn(process, thisProcess.knownProcesses)
-        self.assertEquals(set([t[ARGS] for t in answers]), set(range(self.PROCESSES)))
+        set1 = lambda: set([t[ARGS] for t in answers])
+        rightSet = set(range(self.PROCESSES))
+        ## todo: following line failed once - i do not know why
+        timeout(lambda: rightSet == set1(), False)
+        self.assertEquals(set1(), rightSet, 'all processes communicated back')
 
 
 if __name__ == '__main__':
