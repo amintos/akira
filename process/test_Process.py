@@ -185,6 +185,7 @@ class ProcessInOtherProcessTest(unittest.TestCase):
         self.assertEquals(c._to, self.p)
         
     def test_no_connection_can_be_established(self):
+        self.p._triedToConnectOnce = True
         self.p.call(setValue, ('x',))
         self.assertIsDead()
         self.assertNotEquals(value, 'x')
@@ -192,6 +193,7 @@ class ProcessInOtherProcessTest(unittest.TestCase):
     def test_no_connection_can_be_established2(self):
         cp = ConnectionPossibility(BrokenConnection, ())
         self.p.addConnectionPossibility(cp)
+        self.p._triedToConnectOnce = True
         self.p.call(setValue, ('x',))
         self.assertIsDead()
         self.assertNotEquals(value, 'x')
@@ -222,4 +224,4 @@ class setConnectionEndpointsAlgorithmTest(unittest.TestCase):
         self.assertEquals(c.fromProcess(), thisProcess)
         
 if __name__ == '__main__':
-    unittest.main(exit = False)
+    unittest.main(exit = False, verbosity = 1)

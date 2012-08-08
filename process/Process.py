@@ -94,6 +94,7 @@ class ProcessInOtherProcess(Process):
         self._emptyCallQueueThread = None
         self._callQueue = None
         self._markedAsAlive = False
+        self._triedToConnectOnce = False
 
     def markAsDead(self):
         self._markedAsDead = True
@@ -213,6 +214,13 @@ class ProcessInOtherProcess(Process):
         connections = self._connections[:1]
         if connections:
             return connections[0]
+        with self._lock:
+            ## To enable debug prints on connection failure and 
+            ## to remove raise-conditions in testing
+            if not self._triedToConnectOnce:
+                self._triedToConnectOnce = True
+                self.newConnection()
+                return self.chooseConnection()
         return None
 
 def addConnectionPossibilities(process, possibilities):

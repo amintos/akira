@@ -55,6 +55,10 @@ class Proxy(ProxyWithExceptions):
     def bindMethod(self, name):
         return self.BoundProxyMethod(self.call, self.reference, name)
 
+    @insideProxy
+    def getMethod(self):
+        return self.call
+
 #
 # proxy methods for asynchronous send only
 #
@@ -137,9 +141,14 @@ def reference(obj, method, ProxyClass = Proxy):
     '''reference an object and adapt communication to the method
 the object can also be a Reference. So the method can be changed'''
     if ProxyClass.isProxy(obj):
-        reference = insideProxy(obj).getReference()
+        reference = Proxy.getReference(obj)
     else:
         reference = objectbase.store(obj)
     return ProxyClass(method, reference)
+
+def referenceMethod(reference, ProxyClass = Proxy):
+    assert ProxyClass.isProxy(reference)
+    return ProxyClass.getMethod(reference)
         
-__all__ = ['reference', 'callback', 'sync', 'async', 'send', 'Proxy']
+__all__ = ['reference', 'callback', 'sync', 'async', 'send', 'Proxy', \
+           'referenceMethod']

@@ -14,6 +14,7 @@ try:
         os.chdir(dirPath)
         for fileName in fileNames:
             if isTestFile(fileName):
+##                print fileName
                 p = subprocess.Popen([sys.executable, fileName],
                                      stdin = subprocess.PIPE,
                                      stderr = subprocess.PIPE,

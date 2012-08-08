@@ -1,18 +1,16 @@
-from functools import partial
 import sys
 import time
-
-from Process import thisProcess
 import unittest
 
+from functools import partial
+from multiprocessing.pool import Pool
+from LocalObjectDatabase import LocalObjectDatabase
+from StringIO import StringIO
+
+from Process import thisProcess
 from test_multi_Process import timeout, TIMEOUT
 from reference import *
 
-from multiprocessing.pool import Pool
-
-from LocalObjectDatabase import LocalObjectDatabase
-
-from StringIO import StringIO
 
 class MockReference(object):
 
@@ -39,6 +37,22 @@ class ProxyTest(unittest.TestCase):
         self.assertEquals(called, [False])
         meth = p.someMethod()
         self.assertEquals(called, [True])
+
+    def test_pass_args_to_method(self):
+        l = []
+        obj = object()
+        def method(*args, **kw):
+            l.append((args, kw))
+
+        p = Proxy(method, obj)
+        p.append(3,4, a = '3')
+        t = l[0]
+        self.assertEquals(t[1], {})
+        args = t[0]
+        self.assertIs(args[0], obj)
+        self.assertEquals(args[1], 'append')
+        self.assertEquals(args[2], (3,4))
+        self.assertEquals(args[3], {'a':'3'})
 
 
 class TestObject(object):
@@ -237,7 +251,6 @@ class CallbackTest(TestBase):
          cb = partial(thisProcess.call, setValue)
          cb((1,))
          self.assertEquals(value, (1,))
-         timeout(lambda: value, None)
          self.pool.apply_async(cb, ((2,),)).get(TIMEOUT)
          timeout(lambda: value, (1,))
          self.assertEquals(value, (2,))
@@ -258,11 +271,28 @@ class CallbackTest(TestBase):
         timeout(lambda: value, None)
         self.assertEqual(value, ('s', 3))
 
+class ReferenceTest(unittest.TestCase):
 
+
+    def test_sync(self):
+        obj = []
+        p = reference(obj, sync)
+        p.append(3)
+        self.assertEquals(obj, [3])
+
+    def test_exchangeMethod(self):
+        p = reference([], sync)
+        self.assertEquals(referenceMethod(p), sync)
+        p2 = reference(p, async)
+        self.assertIsNot(p2, p)
+        self.assertEquals(referenceMethod(p2), async)
+
+    
+        
         
 if __name__ == '__main__':
     import thread
-    defaultTest = None#'SyncTest.test_wait'#None#'AsyncTest.test_real_async_with_wait'
+    defaultTest = None#'ReferenceTest'
     kw = dict(defaultTest = defaultTest, exit = False, verbosity = 1)
     unittest.main(**kw)
 ##    _id = thread.start_new(unittest.main, (), kw)
