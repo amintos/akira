@@ -14,17 +14,19 @@ from reference import *
 
 
 class MockReference(object):
+    process = None
 
     def __init__(self, value):
         self.value = value
 
-    def islocal(self):
+    def isLocal(self):
         return True
 
     def localProcess(self):
         return thisProcess
 
 class ProxyTest(unittest.TestCase):
+    maxDiff = None
 
     Proxy = Proxy
 
@@ -41,7 +43,9 @@ class ProxyTest(unittest.TestCase):
 
     def test_pass_args_to_method(self):
         l = []
-        obj = object()
+        obj = X()
+        obj.process = None
+        obj.isLocal = None
         def method(*args, **kw):
             l.append((args, kw))
 
@@ -50,8 +54,7 @@ class ProxyTest(unittest.TestCase):
         t = l[0]
         self.assertEquals(t[1], {})
         args = t[0]
-        self.assertIs(args[0], obj)
-        self.assertEquals(args[1], 'append')
+        self.assertEquals(args[1], '__call__')
         self.assertEquals(args[2], (3,4))
         self.assertEquals(args[3], {'a':'3'})
 
@@ -59,6 +62,26 @@ class ProxyTest(unittest.TestCase):
     def test_add(self):
         p = Proxy(sync, ref(1))
         self.assertEquals(p + 1, 2)
+
+
+    class X(object): ## todo: test with oldstyle
+        a = 1
+        def f():pass
+        __reduce__ = __reduce_ex__ = 1
+
+    def test_attributes_are_the_same_plus_exceptions(self):
+        self.assertDir(self.X())
+
+    def assert_class_objects_can_be_listed(self):
+        self.assertDir(self.X)
+
+    def assertDir(self, o):
+        l = dir(o)
+        l.sort()
+        p = Proxy(sync, ref(o))
+        l2 = dir(p)
+        l2.sort()
+        self.assertEquals(l2, l)
         
 
 class TestObject(object):
@@ -278,7 +301,7 @@ class CallbackTest(TestBase):
         self.assertEqual(value, ('s', 3))
 
 class ReferenceTest(unittest.TestCase):
-
+    
 
     def test_sync(self):
         obj = []
@@ -292,7 +315,7 @@ class ReferenceTest(unittest.TestCase):
         p2 = reference(p, async)
         self.assertIsNot(p2, p)
         self.assertEquals(referenceMethod(p2), async)
-
+ 
     def test_reduce(self):
         l = []
         class X(object):
@@ -311,7 +334,7 @@ class ReferenceTest(unittest.TestCase):
         
 if __name__ == '__main__':
     import thread
-    defaultTest = None#'ReferenceTest'
+    defaultTest = None#'ProxyTest.test_attributes_are_the_same_plus_exceptions'
     kw = dict(defaultTest = defaultTest, exit = False, verbosity = 1)
     unittest.main(**kw)
 ##    _id = thread.start_new(unittest.main, (), kw)

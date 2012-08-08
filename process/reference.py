@@ -11,19 +11,25 @@ assert Objectbase() is objectbase
 
 ## optimize: use weak db in some cases
 
-class BoundProxyMethod(object):
-    def __init__(self, method, reference, methodName):
-        self.method = method
+class AttributeReference(object):
+    def __init__(self, reference, attribute):
         self.reference = reference
-        self.methodName = methodName
+        self.attribute = attribute
+        self.takeOverAttributes()
 
-    def __call__(self, *args, **kw):
-        return self.method(self.reference, self.methodName, args, kw)
+    def takeOverAttributes(self):
+        self.process = self.reference.process
+        self.isLocal = self.reference.isLocal
+
+    @property
+    def value(self):
+        return getattr(self.reference.value, self.attribute)
+
+    def __repr__(self):
+        return repr(self.reference) + '.' + str(self.attribute)
 
 class Proxy(ProxyWithExceptions):
     exceptions = ('__reduce__', '__reduce_ex__')
-
-    BoundProxyMethod = BoundProxyMethod
 
     @insideProxy
     def __init__(self, method, reference):
@@ -58,11 +64,16 @@ class Proxy(ProxyWithExceptions):
 
     @insideProxy
     def bindMethod(self, name):
-        return self.BoundProxyMethod(self.method, self.reference, name)
+        reference = AttributeReference(self.reference, name)
+        return self.newReference(self.method, reference)
 
     @insideProxy
     def getMethod(self):
         return self.method
+
+    @classmethod
+    def newReference(cls, *args):
+        return cls(*args)
 
 #
 # proxy methods for asynchronous send only

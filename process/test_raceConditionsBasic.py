@@ -78,7 +78,7 @@ class CreateConnectionsPrimitiveTest(unittest.TestCase):
             if self.accepts_end != 0:
                 break
         self.assertEquals(self.accepts_end, 1)
-        self.assertTrue(self.socketError)
+        self.assertTrue(self.socketError) ## errored once - increase timeout?
 
     def test_thread_is_closed_after_connection_fast_close(self):
         self.connection2 = multiprocessing.connection.Client(self.listener.address)
