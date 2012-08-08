@@ -12,13 +12,13 @@ assert Objectbase() is objectbase
 ## optimize: use weak db in some cases
 
 class BoundProxyMethod(object):
-    def __init__(self, call, reference, methodName):
-        self.call = call
+    def __init__(self, method, reference, methodName):
+        self.method = method
         self.reference = reference
         self.methodName = methodName
 
     def __call__(self, *args, **kw):
-        return self.call(self.reference, self.methodName, args, kw)
+        return self.method(self.reference, self.methodName, args, kw)
 
 class Proxy(ProxyWithExceptions):
     exceptions = ('__reduce__', '__reduce_ex__')
@@ -26,10 +26,10 @@ class Proxy(ProxyWithExceptions):
     BoundProxyMethod = BoundProxyMethod
 
     @insideProxy
-    def __init__(self, call, reference):
-        self.call = call
+    def __init__(self, method, reference):
+        self.method = method
         self.reference = reference
-        self.initArguments = call, reference
+        self.initArguments = method, reference
 
     @insideProxy
     def call(self, methodName, args, kw):
@@ -58,11 +58,11 @@ class Proxy(ProxyWithExceptions):
 
     @insideProxy
     def bindMethod(self, name):
-        return self.BoundProxyMethod(self.call, self.reference, name)
+        return self.BoundProxyMethod(self.method, self.reference, name)
 
     @insideProxy
     def getMethod(self):
-        return self.call
+        return self.method
 
 #
 # proxy methods for asynchronous send only

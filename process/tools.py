@@ -1,6 +1,8 @@
 import Process
 import thread
 
+from reference import *
+
 def pyGet(obj = Process.thisProcess):
     import pickle
     s = pickle.dumps(obj)

@@ -56,6 +56,11 @@ class ProxyTest(unittest.TestCase):
         self.assertEquals(args[3], {'a':'3'})
 
 
+    def test_add(self):
+        p = Proxy(sync, ref(1))
+        self.assertEquals(p + 1, 2)
+        
+
 class TestObject(object):
 
     def setA(self, value):
