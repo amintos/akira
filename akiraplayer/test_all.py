@@ -3,7 +3,7 @@ import unittest
 import time
 
 EXCLUDE_LIST = [
-    'test_all'
+    'test_all', 'test_translator'
 ]
 
 # find all test_*.py files and import everything
@@ -14,8 +14,9 @@ for file in os.listdir('.'):
 
         module_name = file[:-3]
         if module_name not in EXCLUDE_LIST:
+            print 'loading', module_name,
             exec "from %s import *" % module_name
-            print 'loaded', module_name
+            print '[OK]'
         else:
             print 'excluded', module_name
 

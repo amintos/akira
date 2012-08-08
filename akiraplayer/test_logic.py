@@ -50,3 +50,7 @@ class TermInterpretationTest(unittest.TestCase):
         self.assertIn('b', t.statements)
         self.assertEqual('a', t.statements['b'][0].body[0].functor)
 
+    def test_theory_holds(self):
+        t = Theory().hold(Atom('a'))
+        self.assertIn('a', t.statements)
+
