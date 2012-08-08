@@ -43,12 +43,17 @@ class Proxy(ProxyWithExceptions):
     def __reduce__(self):
         return self.__class__, self.initArguments
 
+    def __reduce_ex__(self, proto):
+        return self.__reduce__()
+
     @classmethod
-    def isProxy(cls, obj):
+    def isReferenceProxy(cls, obj):
         return issubclass(type(obj), cls)
 
     @insideProxy
     def __getattribute__(self, name):
+        if name in self.exceptions:
+            return getattr(self, name)
         return self.bindMethod(name)
 
     @insideProxy
@@ -140,14 +145,14 @@ this callback receives the result.get() if no error occurred'''
 def reference(obj, method, ProxyClass = Proxy):
     '''reference an object and adapt communication to the method
 the object can also be a Reference. So the method can be changed'''
-    if ProxyClass.isProxy(obj):
+    if ProxyClass.isReferenceProxy(obj):
         reference = Proxy.getReference(obj)
     else:
         reference = objectbase.store(obj)
     return ProxyClass(method, reference)
 
 def referenceMethod(reference, ProxyClass = Proxy):
-    assert ProxyClass.isProxy(reference)
+    assert ProxyClass.isReferenceProxy(reference)
     return ProxyClass.getMethod(reference)
         
 __all__ = ['reference', 'callback', 'sync', 'async', 'send', 'Proxy', \

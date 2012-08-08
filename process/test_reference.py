@@ -6,6 +6,7 @@ from functools import partial
 from multiprocessing.pool import Pool
 from LocalObjectDatabase import LocalObjectDatabase
 from StringIO import StringIO
+from pickle import loads, dumps
 
 from Process import thisProcess
 from test_multi_Process import timeout, TIMEOUT
@@ -287,6 +288,19 @@ class ReferenceTest(unittest.TestCase):
         self.assertIsNot(p2, p)
         self.assertEquals(referenceMethod(p2), async)
 
+    def test_reduce(self):
+        l = []
+        class X(object):
+            @staticmethod
+            def xx(a):
+                l.append(a)
+                return a * a
+        p = reference(X, sync)
+        s = dumps(p)
+        p2 = loads(s)
+        value = p2.xx(3)
+        self.assertEquals(value, 9)
+        self.assertEquals(l, [3])
     
         
         

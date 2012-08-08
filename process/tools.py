@@ -1,9 +1,9 @@
 import Process
 import thread
 
-def pyGet():
+def pyGet(obj = Process.thisProcess):
     import pickle
-    s = pickle.dumps(Process.thisProcess)
+    s = pickle.dumps(obj)
     l = []
     while s:
         l.append(s[:40])
@@ -12,8 +12,8 @@ def pyGet():
     s = '\\\n'.join(s)
     return '__import__("pickle").loads(\\\n%s)' % s
 
-def pyPrint():
-    print 'o = %s' % pyGet()
+def pyPrint(obj = Process.thisProcess):
+    print 'o = %s' % pyGet(obj)
 
 running = thread.allocate_lock()
     
