@@ -71,6 +71,10 @@ this proxy puts all method calls through to the object
                 tb = tb.tb_next ## shorten traceback
             raise ty, err, tb
 
+    @property
+    def outside(self):
+        return outsideProxy(self)
+
 Proxy.afterClassCreation()
 
 def proxy(obj):
