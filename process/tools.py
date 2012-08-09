@@ -1,18 +1,11 @@
 import Process
 import thread
 
-from reference import *
-
 def pyGet(obj = Process.thisProcess):
     import pickle
-    s = pickle.dumps(obj)
-    l = []
-    while s:
-        l.append(s[:40])
-        s = s[40:]
-    s = map(repr, l)
-    s = '\\\n'.join(s)
-    return '__import__("pickle").loads(\\\n%s)' % s
+    s = pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)
+    s = s.encode('base64')
+    return '__import__("pickle").loads("""\n%s""".decode("base64"))' % s
 
 def pyPrint(obj = Process.thisProcess):
     print 'o = %s' % pyGet(obj)
