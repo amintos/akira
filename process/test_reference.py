@@ -6,7 +6,7 @@ from functools import partial
 from multiprocessing.pool import Pool
 from LocalObjectDatabase import LocalObjectDatabase
 from StringIO import StringIO
-from pickle import loads, dumps
+from pickle import loads, dumps, PicklingError, UnpicklingError
 
 from Process import thisProcess
 from test_multi_Process import timeout, TIMEOUT
@@ -24,6 +24,9 @@ class MockReference(object):
 
     def localProcess(self):
         return thisProcess
+
+    def isMockReference(self):
+        return True
 
 class ProxyTest(unittest.TestCase):
     maxDiff = None
@@ -330,8 +333,85 @@ class ReferenceTest(unittest.TestCase):
         self.assertEquals(value, 9)
         self.assertEquals(l, [3])
     
+class AttributeReferenceTest(unittest.TestCase):
+
+    def test_pickle_mock_reference(self):
+        s = dumps(MockReference(1))
+        l = loads(s)
+        self.assertTrue(l.isMockReference())
+
+    def test_value(self):
+        l = []
+        m = MockReference(l)
+        ref = AttributeReference(m, 'append')
+        self.assertEquals(ref.value, l.append)
         
+    def test_reduce(self):
+        l = []
+        self.assertRaises(Exception,
+                          lambda: dumps(l.append))
+        m = ref(l)
+        ar = AttributeReference(m, 'append')
+        s = dumps(ar)
+        ar2 = loads(s)
+        self.assertEquals(ar2.value, l.append)
+        self.assertNotEquals(ar2.value, list().append)
+
+
+class ReferenceMultiProcessTest(TestBase):
+
+    def test_append_to_list(self):
+        l = []
+        r = reference(l, sync)
+        none = self.pool.apply(r.append, (4,))
+        self.assertEquals(none, None)
         
+    def test_pop_from_list(self):
+        l = [4]
+        r = reference(l, sync)
+        four = self.pool.apply(r.pop, ())
+        self.assertEquals(four, 4)
+
+    @unittest.skip('this is not the duty of a reference')
+    def test_dir_list_from_other_side(self):
+        l1 = functionsOf([])
+        r = self.pool.apply(reference, ([], sync))
+        l2 = functionOf(r)
+        print l1, l2,
+        self.assertEquals(l1, l2)
+
+    def test_pickle_reference(self):
+        s = dumps((reference, ([], sync)))
+        l = loads(s)
+        self.assertEquals(l, (reference, ([], sync)))
+
+    @unittest.skip('todo or not?')
+    def test_class_of_list_reference_is_list(self):
+        r = self.pool.apply(reference, ([], sync))
+        self.assertEquals(r.__class__, list)
+    
+##
+#### for dir()
+##
+##class M(type):
+##    def __getattribute__(self, name):
+##        print 'type', name
+##        v = type.__getattribute__(self, name)
+##        print v
+##        print
+##        return v
+##
+##class Y(object):
+##    __metaclass__ = M
+##    def __getattribute__(self, name):
+##        print name
+##        v = object.__getattribute__(self, name)
+##        print v
+##        print
+##        return v
+##
+
+    
 if __name__ == '__main__':
     import thread
     defaultTest = None#'ProxyTest.test_attributes_are_the_same_plus_exceptions'

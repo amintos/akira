@@ -28,8 +28,14 @@ class AttributeReference(object):
     def __repr__(self):
         return repr(self.reference) + '.' + str(self.attribute)
 
+    def __reduce__(self):
+        return AttributeReference, (self.reference, self.attribute)
+
+
 class Proxy(ProxyWithExceptions):
     exceptions = ('__reduce__', '__reduce_ex__')
+
+    TIMEOUT_FOR_SPECIAL_FUNCTIONS = 5 # seconds
 
     @insideProxy
     def __init__(self, method, reference):
@@ -121,6 +127,7 @@ returns a Result object.'''
     result = Result(callback)
     resultReference = objectbase.store(result)
     args = (resultReference, reference, methodName, args, kw)
+##    print args
     reference.process.call(_async_execute, args)
     return result
 
@@ -128,12 +135,14 @@ returns a Result object.'''
 # proxy methods for synchronous send and receive
 #
 
-def sync(*args):
+def sync(*args, **kw):
     '''synchonously call the methods of the object.
 This is the typical communication of python.
-It can make the program slow.'''
+It can make the program slow.
+
+timeout = None is default (in seconds if given)'''
     result = async(*args)
-    return result.get()
+    return result.get(kw.get('timeout', None))
 
 #
 # proxy methods for callback communication
@@ -167,4 +176,4 @@ def referenceMethod(reference, ProxyClass = Proxy):
     return ProxyClass.getMethod(reference)
         
 __all__ = ['reference', 'callback', 'sync', 'async', 'send', 'Proxy', \
-           'referenceMethod']
+           'referenceMethod', 'AttributeReference']
