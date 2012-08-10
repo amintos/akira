@@ -82,8 +82,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.7"
-     inkscape:cx="458.41015"
-     inkscape:cy="71.390746"
+     inkscape:cx="413.77199"
+     inkscape:cy="312.1679"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -131,14 +131,14 @@
     <text
        xml:space="preserve"
        style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       x="106.11537"
+       x="103.22475"
        y="207.8824"
        id="text3755"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3757"
-         x="106.11537"
-         y="207.8824">ReferenceProxy</tspan></text>
+         x="103.22475"
+         y="207.8824">:ReferenceProxy</tspan></text>
     <rect
        ry="0.075000003"
        rx="0.074511841"
@@ -268,13 +268,13 @@
        sodipodi:linespacing="125%"
        id="text4655"
        y="205.89998"
-       x="689.27148"
+       x="688.28516"
        style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
        xml:space="preserve"><tspan
          y="205.89998"
-         x="689.27148"
+         x="688.28516"
          id="tspan4657"
-         sodipodi:role="line">Object</tspan></text>
+         sodipodi:role="line">:object</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.99999988;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:7.99999986, 7.99999986;stroke-dashoffset:0"
        d="m 718.59273,215.29163 c 0,296.24722 0,296.24722 0,296.24722"
