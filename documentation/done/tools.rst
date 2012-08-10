@@ -27,10 +27,10 @@ Your friend has now your object and you can append something:
 
 |step3|
 
-You see this because it is your object!
+You see this because it is your object! And you answer.
 
 |step4|
 
-And you answer.
+Your friend is able to see those changes.
 
 |step5|
