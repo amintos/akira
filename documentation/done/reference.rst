@@ -58,4 +58,5 @@ Where is it implemented? `(py)
 
 Why does the *ReferenceProxy* has a *reference* attribute? `(rst)
 <LocalObjectDatabase.rst>`__ `(html)
-<LocalObjectDatabase.html>`__.
+<LocalObjectDatabase.html>`__. 
+

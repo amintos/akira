@@ -198,14 +198,15 @@ optional arguments:
 # proxy methods for callback communication
 #
 
-def callback(reference, methodName, args, kw):
+def callback(reference, methodName, args, kw, **kwargs):
     '''call the methods of the object but pass a callback as first argument
 this callback receives the result.get() if no error occurred'''
     assert args, 'the callback must be the first argument'
     assert callable(args[0]), 'the callback must be the first argument'
     callback = args[0]
     methodArgs = args[1:]
-    return async(reference, methodName, methodArgs, kw, callback = callback)
+    return async(reference, methodName, methodArgs, kw, callback = callback,
+                 **kwargs)
 
 
 #
