@@ -322,7 +322,7 @@ After some thoughts: It would be good to have a single object <em>p</em> one can
 <em>p</em>.call(<em>function</em>, <em>arguments</em>) then executes the <em>function</em> in this process <em>p</em> with the given <em>arguments</em>.</p>
 <p>If one does not have to worry how to connect back to the origins of an object one can more easily implement these:</p>
 <ul class="simple">
-<li>Object references to objects in other processes (see <a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/proxy.py">proxy</a>)</li>
+<li>Object references to objects in other processes (see reference <a class="reference external" href="reference.rst">(rst)</a> <a class="reference external" href="reference.html">(html)</a> )</li>
 <li>Mobile objects (as <a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/Process.py">Process</a> es)</li>
 </ul>
 <p>Therefore the following architecture is proposed:</p>
@@ -332,10 +332,16 @@ There is Process1 on the left and Process2 on the right. Both have an object wit
 <p>If now the user <img alt="user" src="https://github.com/amintos/akira/raw/playground/documentation/images/user.png" /> in Process1 wants to connect to Process2, it creates a connection to Process2's listener.
 This listener then creates a connection on his side of the net for process1.
 Process1 in Process2 is a representative for the original Process1 in Process1. It holds the connection.
-Both sides of a connection are informed about ther endpoints called fromProcess and toProcess. <a class="reference external" href="set_connection_endpoints.rst">(rst)</a>
-<a class="reference external" href="set_connection_endpoints.html">(html)</a>
+Both sides of a connection are informed about ther endpoints called fromProcess and toProcess <a class="reference external" href="set_connection_endpoints.rst">(rst)</a>
+<a class="reference external" href="set_connection_endpoints.html">(html)</a> .
 Process1 in Process1 and Process2 in Process2 are of type <a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/Process.py">Process</a>.thisProcess.
 Process1 in Process2 and Process2 in Process1 are of type <a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/Process.py">Process</a>.ProcessInOtherProcess.</p>
+<div class="section" id="questions">
+<h1>Questions?</h1>
+<p>Which processes does my process know? <em>thisProcess.knownProcesses</em></p>
+<p>How does it know about other processes connected? <a class="reference external" href="set_connection_endpoints.rst">(rst)</a>
+<a class="reference external" href="set_connection_endpoints.html">(html)</a> .</p>
+</div>
 </div>
 </body>
 </html>
