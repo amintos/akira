@@ -10,11 +10,11 @@
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="927.49249"
-   height="420.38577"
+   height="371.04376"
    id="svg2"
    version="1.1"
    inkscape:version="0.48.1 "
-   sodipodi:docname="ReferenceProxy_async.svg">
+   sodipodi:docname="ReferenceProxy_callback.svg">
   <defs
      id="defs4">
     <marker
@@ -81,9 +81,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4"
-     inkscape:cx="486.90779"
-     inkscape:cy="91.472479"
+     inkscape:zoom="0.7"
+     inkscape:cx="458.41015"
+     inkscape:cy="71.390746"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -96,12 +96,12 @@
      inkscape:window-x="-4"
      inkscape:window-y="-4"
      inkscape:window-maximized="1"
-     inkscape:snap-smooth-nodes="true"
+     inkscape:snap-smooth-nodes="false"
      inkscape:snap-object-midpoints="true"
-     inkscape:object-paths="true"
-     inkscape:snap-intersection-paths="true"
-     inkscape:object-nodes="true"
-     inkscape:snap-nodes="true" />
+     inkscape:object-paths="false"
+     inkscape:snap-intersection-paths="false"
+     inkscape:object-nodes="false"
+     inkscape:snap-nodes="false" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -165,20 +165,20 @@
        id="path6801-7"
        inkscape:connector-curvature="0" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:7.99999979, 7.99999979;stroke-dashoffset:0"
-       d="m 178.57143,215.29162 c 0,345.58924 0,345.58924 0,345.58924"
+       style="fill:none;stroke:#000000;stroke-width:0.99999988;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:7.99999979, 7.99999979;stroke-dashoffset:0"
+       d="m 178.57143,215.29162 c 0,296.24723 0,296.24723 0,296.24723"
        id="path3775"
        inkscape:connector-curvature="0" />
     <path
        inkscape:connector-curvature="0"
        id="path3787"
-       d="m 452.59273,311.29165 c 0,249.58923 0,249.58923 0,249.58923"
-       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:8.00000011, 8.00000011;stroke-dashoffset:0" />
+       d="m 452.59273,297.5851 c 0,213.95377 0,213.95377 0,213.95377"
+       style="fill:none;stroke:#000000;stroke-width:0.99999988;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:8.00000012, 8.00000012;stroke-dashoffset:0" />
     <rect
        style="opacity:0.25;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.99999994;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
        id="rect3797"
        width="19"
-       height="298.0827"
+       height="253.13089"
        x="-104.95422"
        y="228.27879"
        rx="0.074511841"
@@ -186,19 +186,19 @@
     <path
        inkscape:connector-curvature="0"
        id="path3833"
-       d="m -95.3495,215.29163 c 0,345.58923 0,345.58923 0,345.58923"
-       style="fill:none;stroke:#000000;stroke-width:0.99999994;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:7.99999977, 7.99999977;stroke-dashoffset:0" />
+       d="m -95.3495,215.29163 c 0,296.24722 0,296.24722 0,296.24722"
+       style="fill:none;stroke:#000000;stroke-width:0.99999988;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:7.99999977, 7.99999977;stroke-dashoffset:0" />
     <text
        xml:space="preserve"
        style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       x="-23.194138"
+       x="-59.346481"
        y="261.17044"
        id="text4281"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan4283"
-         x="-23.194138"
-         y="261.17044">someMethod()</tspan></text>
+         x="-59.346481"
+         y="261.17044">someMethod(callback)</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
@@ -228,7 +228,7 @@
        style="opacity:0.25;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
        id="rect4312"
        width="19"
-       height="26.460478"
+       height="33.664288"
        x="443.09274"
        y="389.10809"
        rx="0.074511841"
@@ -276,8 +276,8 @@
          id="tspan4657"
          sodipodi:role="line">Object</tspan></text>
     <path
-       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:7.99999987, 7.99999987;stroke-dashoffset:0"
-       d="m 718.59273,215.29163 c 0,345.58923 0,345.58923 0,345.58923"
+       style="fill:none;stroke:#000000;stroke-width:0.99999988;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:7.99999986, 7.99999986;stroke-dashoffset:0"
+       d="m 718.59273,215.29163 c 0,296.24722 0,296.24722 0,296.24722"
        id="path4659"
        inkscape:connector-curvature="0" />
     <rect
@@ -322,47 +322,31 @@
          id="tspan5423"
          x="509.07617"
          y="383.80945">setValue(aValue)</tspan></text>
-    <rect
-       ry="0.075000003"
-       rx="0.074511841"
-       y="448.3938"
-       x="443.09274"
-       height="32.521393"
-       width="19"
-       id="rect5438"
-       style="opacity:0.25;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
-    <text
-       sodipodi:linespacing="125%"
-       id="text5440"
-       y="441.17044"
-       x="20.736526"
-       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       xml:space="preserve"><tspan
-         y="441.17044"
-         x="20.736526"
-         id="tspan5442"
-         sodipodi:role="line">get()</tspan></text>
-    <path
-       inkscape:connector-curvature="0"
-       id="path5444"
-       d="m -94.84442,448.09793 c 546.16467,0 546.16467,0 546.16467,0"
-       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#EmptyTriangleOutL)" />
     <path
        sodipodi:nodetypes="csc"
        inkscape:connector-curvature="0"
        id="path5446"
-       d="m 451.99532,480.77238 c -379.441819,0 -494.940927,0 -530.097949,0 -15.38443,0 -15.38443,0 -15.38443,0"
-       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:4.00000001, 4.00000001;stroke-dashoffset:0;marker-end:url(#Arrow1Lend)" />
+       d="m 451.99532,422.77238 c -374.201919,0 -488.106044,0 -522.777565,0 -15.171979,0 -15.171979,0 -15.171979,0"
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#Arrow1Lend)" />
     <text
        xml:space="preserve"
        style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       x="10.160355"
-       y="477.08759"
+       x="-31.392441"
+       y="419.08759"
        id="text5448"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan5450"
-         x="10.160355"
-         y="477.08759">aValue</tspan></text>
+         x="-31.392441"
+         y="419.08759">callback(aValue)</tspan></text>
+    <rect
+       ry="0.075000003"
+       rx="0.074511841"
+       y="422.77237"
+       x="-94.954224"
+       height="40.95966"
+       width="19"
+       id="rect6434"
+       style="opacity:0.25;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.99999988;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
   </g>
 </svg>
