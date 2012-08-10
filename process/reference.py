@@ -2,7 +2,7 @@ import sys
 
 from LocalObjectDatabase import LocalObjectDatabase
 
-from proxy import ProxyWithExceptions, insideProxy, outsideProxy
+from proxy import Proxy, insideProxy, outsideProxy
 from multiprocessing.pool import ApplyResult
 
 class Objectbase(LocalObjectDatabase):
@@ -32,8 +32,9 @@ class AttributeReference(object):
         return AttributeReference, (self.reference, self.attribute)
 
 
-class Proxy(ProxyWithExceptions):
-    exceptions = ('__reduce__', '__reduce_ex__')
+class ReferenceProxy(Proxy):
+    '''this '''
+    exclusions = ('__reduce__', '__reduce_ex__')
 
     TIMEOUT_FOR_SPECIAL_FUNCTIONS = 5 # seconds
 
@@ -64,7 +65,7 @@ class Proxy(ProxyWithExceptions):
 
     @insideProxy
     def __getattribute__(self, name):
-        if name in self.exceptions:
+        if name in self.exclusions:
             return getattr(self, name)
         return self.bindMethod(name)
 
@@ -162,18 +163,20 @@ this callback receives the result.get() if no error occurred'''
 # creating references
 #
 
-def reference(obj, method, ProxyClass = Proxy):
+def reference(obj, method, ProxyClass = ReferenceProxy):
     '''reference an object and adapt communication to the method
 the object can also be a Reference. So the method can be changed'''
     if ProxyClass.isReferenceProxy(obj):
-        reference = Proxy.getReference(obj)
+        reference = ProxyClass.getReference(obj)
     else:
         reference = objectbase.store(obj)
     return ProxyClass(method, reference)
 
-def referenceMethod(reference, ProxyClass = Proxy):
+def referenceMethod(reference, ProxyClass = ReferenceProxy):
+    '''get the method of referencing the object from a object
+that was returned by reference()'''
     assert ProxyClass.isReferenceProxy(reference)
     return ProxyClass.getMethod(reference)
         
-__all__ = ['reference', 'callback', 'sync', 'async', 'send', 'Proxy', \
+__all__ = ['reference', 'callback', 'sync', 'async', 'send', 'ReferenceProxy', \
            'referenceMethod', 'AttributeReference']

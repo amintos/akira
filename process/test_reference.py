@@ -31,7 +31,7 @@ class MockReference(object):
 class ProxyTest(unittest.TestCase):
     maxDiff = None
 
-    Proxy = Proxy
+    Proxy = ReferenceProxy
 
     def test_call_of_method(self):
         called = [False]
@@ -52,7 +52,7 @@ class ProxyTest(unittest.TestCase):
         def method(*args, **kw):
             l.append((args, kw))
 
-        p = Proxy(method, obj)
+        p = self.Proxy(method, obj)
         p.append(3,4, a = '3')
         t = l[0]
         self.assertEquals(t[1], {})
@@ -63,7 +63,7 @@ class ProxyTest(unittest.TestCase):
 
 
     def test_add(self):
-        p = Proxy(sync, ref(1))
+        p = self.Proxy(sync, ref(1))
         self.assertEquals(p + 1, 2)
 
 
@@ -81,7 +81,7 @@ class ProxyTest(unittest.TestCase):
     def assertDir(self, o):
         l = dir(o)
         l.sort()
-        p = Proxy(sync, ref(o))
+        p = self.Proxy(sync, ref(o))
         l2 = dir(p)
         l2.sort()
         self.assertEquals(l2, l)
