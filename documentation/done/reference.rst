@@ -17,7 +17,7 @@ References of an object are implemented as proxies to an object.
 The method determines how the proxy communicates with the object referenced by the reference `(rst)
 <LocalObjectDatabase.rst>`__ `(html)
 <LocalObjectDatabase.html>`__.
-Such an ReferenceProxy can be created by *reference.reference(object, method)*.
+Such a ReferenceProxy can be created by *reference.reference(object, method)*.
 *method* is currently one of *sync()*, *async()*, *send()*, *callback()*
 
 See the examples of communication below.
@@ -44,10 +44,10 @@ It has a *get()* method to get aValue of the original call to the object.
 |ReferenceProxyCallback|
 
 Callback communication is a way of communicating without waiting.
-All method call sent to the proxy get a function *callback(aValue)* as first argument. 
+All method calls sent to the proxy get a function *callback(aValue)* as first argument. 
 The following arguments can be passed as usally.
 If the call to the object succeeds without error the callback is called with the return value. 
-Of cause one can use the *get()* method of result.
+Of course one can use the *get()* method of result.
 
 Questions?
 ----------
@@ -56,7 +56,7 @@ Where is it implemented? `(py)
 <https://github.com/amintos/akira/blob/playground/process/reference.py>`__
 
 
-Why does the *ReferenceProxy* has a *reference* attribute? `(rst)
+Why does the *ReferenceProxy* have a *reference* attribute? `(rst)
 <LocalObjectDatabase.rst>`__ `(html)
 <LocalObjectDatabase.html>`__. 
 

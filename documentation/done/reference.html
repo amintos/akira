@@ -322,7 +322,7 @@ ul.auto-toc {
 <p>References of an object are implemented as proxies to an object.</p>
 <p><img alt="ReferenceProxyClass" src="https://github.com/amintos/akira/raw/playground/documentation/images/ReferenceProxy_class.png" /></p>
 <p>The method determines how the proxy communicates with the object referenced by the reference <a class="reference external" href="LocalObjectDatabase.rst">(rst)</a> <a class="reference external" href="LocalObjectDatabase.html">(html)</a>.
-Such an ReferenceProxy can be created by <em>reference.reference(object, method)</em>.
+Such a ReferenceProxy can be created by <em>reference.reference(object, method)</em>.
 <em>method</em> is currently one of <em>sync()</em>, <em>async()</em>, <em>send()</em>, <em>callback()</em></p>
 <p>See the examples of communication below.</p>
 <p><img alt="ReferenceProxySync" src="https://github.com/amintos/akira/raw/playground/documentation/images/ReferenceProxy_sync.png" /></p>
@@ -340,15 +340,15 @@ It has a <em>get()</em> method to get aValue of the original call to the object.
 <em>get()</em> blocks until aValue arrives.</p>
 <p><img alt="ReferenceProxyCallback" src="https://github.com/amintos/akira/raw/playground/documentation/images/ReferenceProxy_callback.png" /></p>
 <p>Callback communication is a way of communicating without waiting.
-All method call sent to the proxy get a function <em>callback(aValue)</em> as first argument.
+All method calls sent to the proxy get a function <em>callback(aValue)</em> as first argument.
 The following arguments can be passed as usally.
 If the call to the object succeeds without error the callback is called with the return value.
-Of cause one can use the <em>get()</em> method of result.</p>
+Of course one can use the <em>get()</em> method of result.</p>
 </div>
 <div class="section" id="questions">
 <h1>Questions?</h1>
 <p>Where is it implemented? <a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/reference.py">(py)</a></p>
-<p>Why does the <em>ReferenceProxy</em> has a <em>reference</em> attribute? <a class="reference external" href="LocalObjectDatabase.rst">(rst)</a> <a class="reference external" href="LocalObjectDatabase.html">(html)</a>.</p>
+<p>Why does the <em>ReferenceProxy</em> have a <em>reference</em> attribute? <a class="reference external" href="LocalObjectDatabase.rst">(rst)</a> <a class="reference external" href="LocalObjectDatabase.html">(html)</a>.</p>
 </div>
 </div>
 </body>
