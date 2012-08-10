@@ -157,8 +157,9 @@ from another process to local references of this process.
 
     @classmethod
     def tearDownClass(cls):
-        cls.pool.close()
-        cls.pool.join()
+##        cls.pool.close()
+##        cls.pool.join()
+        pass
 
     def setUp(self):
         global value
@@ -230,7 +231,7 @@ class AsyncTest(TestBase):
     def test_setValue_error(self):
         v = self.pool.apply_async(_call_async, (self.ref, 'setValueWithError', \
                                           ('aValue',), {}))
-        v = v.get(TIMEOUT)
+        v = v.get(TIMEOUT * 2)
         self.assertEquals(v[0], MyError)
         self.assertEquals(v[1].args, ('error!',))
         self.assertEquals(self.x.value, 'aValue')
@@ -392,29 +393,29 @@ class ReferenceMultiProcessTest(TestBase):
     
 ##
 #### for dir()
-##
-##class M(type):
-##    def __getattribute__(self, name):
-##        print 'type', name
-##        v = type.__getattribute__(self, name)
-##        print v
-##        print
-##        return v
-##
-##class Y(object):
-##    __metaclass__ = M
-##    def __getattribute__(self, name):
-##        print name
-##        v = object.__getattribute__(self, name)
-##        print v
-##        print
-##        return v
-##
+
+class M(type):
+    def __getattribute__(self, name):
+        print 'type', name
+        v = type.__getattribute__(self, name)
+        print v
+        print
+        return v
+
+class Y(object):
+    __metaclass__ = M
+    def __getattribute__(self, name):
+        print name
+        v = object.__getattribute__(self, name)
+        print v
+        print
+        return v
+
 
     
-if __name__ == '__main__':
+if __name__ == '__maind__':
     import thread
-    defaultTest = None#'ProxyTest.test_attributes_are_the_same_plus_exceptions'
-    kw = dict(defaultTest = defaultTest, exit = False, verbosity = 1)
+    defaultTest = 'AsyncTest.test_setValue_error'
+    kw = dict(defaultTest = defaultTest, exit = False, verbosity = 2)
     unittest.main(**kw)
 ##    _id = thread.start_new(unittest.main, (), kw)

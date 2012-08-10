@@ -4,6 +4,7 @@ from LocalObjectDatabase import LocalObjectDatabase
 
 from proxy import Proxy, insideProxy, outsideProxy
 from multiprocessing.pool import ApplyResult
+import RemoteException
 
 class Objectbase(LocalObjectDatabase):
     pass
@@ -46,7 +47,11 @@ class ReferenceProxy(Proxy):
 
     @insideProxy
     def call(self, methodName, args, kw):
-        return self.method(self.reference, methodName, args, kw)
+        try:
+            return self.method(self.reference, methodName, args, kw)
+        except:
+            ty, err, tb = exc_info_without_reference()
+            raise ty, err, tb
 
     @insideProxy
     def getReference(self):
@@ -96,6 +101,35 @@ def send(reference, methodName, args, kw):
 Nothing is returned, No Errors handled.'''
     reference.process.call(_send_execute, (reference, methodName, args, kw))
 
+
+#
+# asynchronous traceback transfer options
+#
+
+def exc_info_without_reference(exc_info = sys.exc_info):
+    ty, err, tb = exc_info()
+    # skip three reference internal calls
+    _globals = globals()
+    while tb and tb.tb_frame.f_globals is _globals:
+        tb = tb.tb_next
+    return ty, err, tb
+
+def exc_info_no_traceback(exc_info = sys.exc_info):
+    '''just transfer the error and the type
+the traceback is dropped'''
+    ty, err, tb = exc_info()
+    return ty, err, None
+
+def exc_info_print_traceback(exc_info = exc_info_without_reference):
+    '''transfer a RemoteException of the error
+the traceback is printed along with the original error'''
+    ty, err, tb = exc_info()
+    error = RemoteException.withTracebackPrint(ty, err, tb)
+    return None, error, None
+
+## todo: add here traceback references
+
+
 #
 # proxy methods for asynchronous send and receive 
 #
@@ -112,24 +146,34 @@ class Result(ApplyResult):
         self.error = (ty, err, tb)
         self._set(None, (False, err))
 
-def _async_execute(resultReference, reference, methodName, args, kw):
+def _async_execute(resultReference, reference, methodName, args, kw, \
+                   exc_info = exc_info_print_traceback):
+    '''execute the asynchronous call in the local process'''
     try:
         result = _send_execute(reference, methodName, args, kw)
         send(resultReference, 'setValue', (result,), {})
     except:
-        ty, err, tb = sys.exc_info()
-        ## todo: include traceback
-        send(resultReference, 'setError', (ty, err, None), {})
-    
+        send(resultReference, 'setError', exc_info(), {})
 
-def async(reference, methodName, args, kw, callback = None):
+def async(reference, methodName, args, kw, callback = None, **kwargs):
     '''call the methods of the object.
-returns a Result object.'''
+returns a Result object.
+
+optional arguments:
+    exc_info
+        should be a function that is called instead of sys.get_exc():
+	exc_info_no_traceback
+	exc_info_print_traceback
+    callback
+        a function that is called with every result returned
+        callback(aValue)
+	
+'''
     result = Result(callback)
     resultReference = objectbase.store(result)
     args = (resultReference, reference, methodName, args, kw)
 ##    print args
-    reference.process.call(_async_execute, args)
+    reference.process.call(_async_execute, args, kwargs)
     return result
 
 #
@@ -141,9 +185,14 @@ def sync(*args, **kw):
 This is the typical communication of python.
 It can make the program slow.
 
-timeout = None is default (in seconds if given)'''
-    result = async(*args)
-    return result.get(kw.get('timeout', None))
+optional arguments:
+    timeout
+        None or the time in seconds to wait for a result of a call
+    see async for more arguments
+'''
+    timeout = kw.pop('timeout', None)
+    result = async(*args, **kw)
+    return result.get(timeout)
 
 #
 # proxy methods for callback communication
