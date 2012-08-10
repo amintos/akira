@@ -3,6 +3,10 @@ import StringIO
 from copy_reg import dispatch_table, pickle
 
 def withTracebackPrint(ErrorType, thrownError, _traceback):
+    '''returns an Exception object for the given ErrorType of the thrownError
+and the _traceback
+
+can be used like withTracebackPrint(*sys.exc_info())'''
     file = StringIO.StringIO()
     file.write('\n')
     traceback.print_exception(ErrorType, thrownError, _traceback, file = file)
@@ -13,16 +17,19 @@ def withTracebackPrint(ErrorType, thrownError, _traceback):
     ## or the traceback print has no unescaped newlines
 
 class _RemoteExceptionMeta(type):
+    'Metaclass for RemoteExceptions to make copy_reg accept them'
     pass
                     
 def _pickle_function(RemoteExceptionClass):
-    return _loadErrorType, (RemoteExceptionClass.BaseExceptionType,)
+    'how to pickle the remote exception type'
+    return asRemoteException, (RemoteExceptionClass.BaseExceptionType,)
 
 pickle(_RemoteExceptionMeta, _pickle_function)
 
 _remoteExceptionCache = {} # exception : RemoteException
 
 def _newRemoteException(ErrorType):
+    '''create a new RemoteExceptionType from a given errortype'''
     RemoteErrorBaseType = _RemoteExceptionMeta('', (ErrorType,), {})
     class RemoteException(RemoteErrorBaseType):
         BaseExceptionType = ErrorType
@@ -44,7 +51,19 @@ def _newRemoteException(ErrorType):
     return RemoteException
 
 
-def _loadErrorType(ErrorType):
+def asRemoteException(ErrorType):
+    '''return the remote exception version of the error above
+you can catch errors as usally:
+    >>> try:
+        raise asRemoteException(ValueError)
+    except ValueError:
+        pass
+or you can catch the remote Exception
+    >>> try:
+        raise asRemoteException(ReferenceError)(ReferenceError(),'')
+    except asRemoteException(ReferenceError):
+        pass
+'''
     RemoteException = _remoteExceptionCache.get(ErrorType)
     if RemoteException is None:
         RemoteException = _newRemoteException(ErrorType)
@@ -53,8 +72,9 @@ def _loadErrorType(ErrorType):
     return RemoteException
 
 def _loadError(ErrorType, thrownError, tracebackString):
-    RemoteException = _loadErrorType(ErrorType)
+    '''constructor of RemoteExceptions'''
+    RemoteException = asRemoteException(ErrorType)
     return RemoteException(thrownError, tracebackString)
     
     
-__all__ = ['withTracebackPrint']
+__all__ = ['withTracebackPrint', 'asRemoteException']

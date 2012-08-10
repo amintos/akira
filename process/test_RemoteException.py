@@ -69,6 +69,12 @@ class RemoteExceptionTest(unittest.TestCase):
         originalArgs = error[1].args
         remoteArgs = withTracebackPrint(*error).args
         self.assertEquals(remoteArgs, originalArgs)
+
+    def test_catch_remote_exception(self):
+        try:
+            raise asRemoteException(ReferenceError)(ReferenceError(),'')
+        except asRemoteException(ReferenceError):
+            pass
         
 
 if __name__ == '__main__':
