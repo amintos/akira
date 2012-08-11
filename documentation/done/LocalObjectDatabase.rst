@@ -119,6 +119,6 @@ The race condition looks like this:
 |raceCondition|
 
 But this race-condition is removed by referencing the direct references by indirect references.
-So only if those indirect references receive a new id, the direct references are freed and really no longer required.
+So only if those indirect references receive a new id, the direct references can be freed if really no longer required.
 
 
