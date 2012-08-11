@@ -317,6 +317,8 @@ ul.auto-toc {
 <div class="document" id="localobjectdatabase">
 <h1 class="title">LocalObjectDatabase</h1>
 
+<div class="section" id="how-do-references-work">
+<h1>How do references work</h1>
 <p>A LocalObjectDatabase is a id-to-object storage.
 Objects can be stored under multiple references and such under multiple ids.</p>
 <p>There are three kinds of references present.
@@ -343,9 +345,35 @@ If the reference is deleted a call is made to the process that pops the id &quot
 Instead the direct reference is referenced by the IndirectRemoteDatabaseReference.
 This prevents the deletion of the object under id &quot;2&quot; in case the direct reference is deleted.</p>
 <p><img alt="indirect2" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_indirect_2.png" /></p>
-<p>When the indirect reference is created a call is sent to the original process to get a new direct reference.
-The old reference is freed:</p>
+<p>When the indirect reference is created a call is sent to the original process to get a new direct reference.</p>
+<p>The old reference is freed:</p>
 <p><img alt="indirect3" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_indirect_3.png" /></p>
+<p>If below a indirect reference is sent to another process, almost the same happens.</p>
+<p><img alt="indirect4" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_indirect_4.png" /></p>
+<p>The difference is the following:
+The new indirect reference references the direct &quot;3&quot; instead of the indirect &quot;3&quot;.
+Resulting in:</p>
+<p><img alt="indirect5" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_indirect_5.png" /></p>
+</div>
+<div class="section" id="removed-race-condition">
+<h1>Removed Race-condition</h1>
+<p>Imagin the following scenario:</p>
+<p>The indirect reference in the bottom was created in another process before the reference on the right received a new id.
+As shown with the red arrow, it does reference the direct reference but the indirect one.</p>
+<p>The race condition looks like this:</p>
+<blockquote>
+<ol class="arabic simple">
+<li>The request for id 4 is sent.</li>
+<li>The request for id &quot;3&quot; is finished</li>
+<li>The direct reference for &quot;2&quot; is deleted, not needed anymore.</li>
+<li>The object is popped from database under id &quot;2&quot;</li>
+<li>The request for a new id &quot;4&quot; arrives and tries to access the object under id &quot;2&quot; - an invalid operation.</li>
+</ol>
+</blockquote>
+<p><img alt="raceCondition" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_race.png" /></p>
+<p>But this race-condition is removed by referencing the direct references by indirect references.
+So only if those indirect references receive a new id, the direct references are freed and really no longer required.</p>
+</div>
 </div>
 </body>
 </html>

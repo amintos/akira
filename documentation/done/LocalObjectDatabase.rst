@@ -8,9 +8,14 @@
 .. |indirect4| image:: https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_indirect_4.png
 .. |indirect5| image:: https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_indirect_5.png
 .. |classDiagram| image:: https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_class_diagram.png
+.. |raceCondition| image:: https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_race.png
 
 LocalObjectDatabase
 ===================
+
+
+How do references work
+----------------------
 
 A LocalObjectDatabase is a id-to-object storage.
 Objects can be stored under multiple references and such under multiple ids.
@@ -59,9 +64,39 @@ The old reference is freed:
 
 |indirect3|
 
+If below a indirect reference is sent to another process, almost the same happens.
 
+|indirect4|
 
+The difference is the following: 
+The new indirect reference references the direct "3" instead of the indirect "3".
+Resulting in:
 
+|indirect5|
 
+Removed Race-condition
+----------------------
+
+Imagin the following scenario:
+
+The indirect reference in the bottom was created in another process before the reference on the right received a new id.
+As shown with the red arrow, it does reference the direct reference but the indirect one.
+
+The race condition looks like this:
+
+ 1. The request for id 4 is sent.
+ 
+ 2. The request for id "3" is finished 
+ 
+ 3. The direct reference for "2" is deleted, not needed anymore.
+ 
+ 4. The object is popped from database under id "2"
+ 
+ 5. The request for a new id "4" arrives and tries to access the object under id "2" - an invalid operation.
+
+|raceCondition|
+
+But this race-condition is removed by referencing the direct references by indirect references.
+So only if those indirect references receive a new id, the direct references are freed and really no longer required.
 
 
