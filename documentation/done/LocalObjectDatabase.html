@@ -321,12 +321,12 @@ ul.auto-toc {
 <h1>How references can be used</h1>
 <p>Objects can be stored in a LocalObjectDatabase with <em>localObjectDatabase.store(anObject)</em>.
 This function returns a DatabaseReference to the object.
-A simplified view of these object s can be seen below.</p>
+A simplified view of these objects can be seen below.</p>
 <p><img alt="classDiagramLocal" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_class_diagram_local.png" /></p>
 <p>All references have a <em>process</em> attribute. So one can send calls to the objects original process.
 Those calls may include such a DatabaseReference.
 When deserialized in its orginal process, the reference object becomes a local one.
-One can test this with <em>isLocal()</em>.
+One can test on this with <em>isLocal()</em>.
 Local references have a <em>value</em> attribute for the referenced object.
 So one can access the object once one is in the objects process.</p>
 <p>If you want to use reference proxies to objects see this: <a class="reference external" href="reference.rst">(rst)</a> <a class="reference external" href="reference.html">(html)</a></p>
@@ -386,7 +386,7 @@ As shown with the red arrow, it does reference the direct reference but the indi
 </blockquote>
 <p><img alt="raceCondition" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_race.png" /></p>
 <p>But this race-condition is removed by referencing the direct references by indirect references.
-So only if those indirect references receive a new id, the direct references are freed and really no longer required.</p>
+So only if those indirect references receive a new id, the direct references can be freed if really no longer required.</p>
 </div>
 </div>
 </body>

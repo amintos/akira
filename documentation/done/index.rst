@@ -37,6 +37,14 @@ What is interesting
   `py
   <https://github.com/amintos/akira/blob/playground/process/Process.py>`__
 
+- A database for objects and refeences
+  `rst
+  <LocalObjectDatabase.rst>`__
+  `html
+  <LocalObjectDatabase.html>`__
+  `py
+  <https://github.com/amintos/akira/blob/playground/process/LocalObjectDatabase.py>`__
+
 
 - How a Connection gets to know about its endpoints. 
   `rst
