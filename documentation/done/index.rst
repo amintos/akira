@@ -10,20 +10,21 @@ What is important
 - Connection protocols IPv4/6, Windows Pipes, maybe Unix pipes `py
   <https://github.com/amintos/akira/blob/playground/process/Listener.py>`__
 
-- object references 
-  `py
-  <https://github.com/amintos/akira/blob/playground/process/reference.py>`__
+- Object references 
   `rst
   <reference.rst>`__
   `html
   <reference.html>`__
+  `py
+  <https://github.com/amintos/akira/blob/playground/process/reference.py>`__
   
-- tools for sending objects to friends `py
-  <https://github.com/amintos/akira/blob/playground/process/tools.py>`__
+- Tools for sending objects to friends 
   `rst
   <tools.rst>`__
   `html
   <tools.html>`__
+  `py
+  <https://github.com/amintos/akira/blob/playground/process/tools.py>`__
 
 
 What is interesting
@@ -37,7 +38,7 @@ What is interesting
   `py
   <https://github.com/amintos/akira/blob/playground/process/Process.py>`__
 
-- A database for objects and refeences
+- A database for objects and references
   `rst
   <LocalObjectDatabase.rst>`__
   `html

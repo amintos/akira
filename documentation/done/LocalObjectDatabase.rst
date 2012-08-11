@@ -99,7 +99,7 @@ Resulting in:
 Removed Race-condition
 ----------------------
 
-Imagin the following scenario:
+Imagine the following scenario:
 
 The indirect reference in the bottom was created in another process before the reference on the right received a new id.
 As shown with the red arrow, it does reference the direct reference but the indirect one.
