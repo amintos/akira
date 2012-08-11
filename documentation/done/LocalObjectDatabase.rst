@@ -8,14 +8,36 @@
 .. |indirect4| image:: https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_indirect_4.png
 .. |indirect5| image:: https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_indirect_5.png
 .. |classDiagram| image:: https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_class_diagram.png
+.. |classDiagramLocal| image:: https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_class_diagram_local.png
 .. |raceCondition| image:: https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_race.png
 
 LocalObjectDatabase
 ===================
 
+How references can be used
+--------------------------
 
-How do references work
-----------------------
+Objects can be stored in a LocalObjectDatabase with *localObjectDatabase.store(anObject)*.
+This function returns a DatabaseReference to the object.
+A simplified view of these objects can be seen below.
+
+|classDiagramLocal|
+
+All references have a *process* attribute. So one can send calls to the objects original process. 
+Those calls may include such a DatabaseReference.
+When deserialized in its orginal process, the reference object becomes a local one.
+One can test on this with *isLocal()*.
+Local references have a *value* attribute for the referenced object.
+So one can access the object once one is in the objects process.
+
+If you want to use reference proxies to objects see this: `(rst)
+<reference.rst>`__ `(html)
+<reference.html>`__
+
+
+
+How references work
+-------------------
 
 A LocalObjectDatabase is a id-to-object storage.
 Objects can be stored under multiple references and such under multiple ids.

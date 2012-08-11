@@ -317,8 +317,22 @@ ul.auto-toc {
 <div class="document" id="localobjectdatabase">
 <h1 class="title">LocalObjectDatabase</h1>
 
-<div class="section" id="how-do-references-work">
-<h1>How do references work</h1>
+<div class="section" id="how-references-can-be-used">
+<h1>How references can be used</h1>
+<p>Objects can be stored in a LocalObjectDatabase with <em>localObjectDatabase.store(anObject)</em>.
+This function returns a DatabaseReference to the object.
+A simplified view of these object s can be seen below.</p>
+<p><img alt="classDiagramLocal" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_class_diagram_local.png" /></p>
+<p>All references have a <em>process</em> attribute. So one can send calls to the objects original process.
+Those calls may include such a DatabaseReference.
+When deserialized in its orginal process, the reference object becomes a local one.
+One can test this with <em>isLocal()</em>.
+Local references have a <em>value</em> attribute for the referenced object.
+So one can access the object once one is in the objects process.</p>
+<p>If you want to use reference proxies to objects see this: <a class="reference external" href="reference.rst">(rst)</a> <a class="reference external" href="reference.html">(html)</a></p>
+</div>
+<div class="section" id="how-references-work">
+<h1>How references work</h1>
 <p>A LocalObjectDatabase is a id-to-object storage.
 Objects can be stored under multiple references and such under multiple ids.</p>
 <p>There are three kinds of references present.
