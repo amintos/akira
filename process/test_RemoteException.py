@@ -75,6 +75,12 @@ class RemoteExceptionTest(unittest.TestCase):
             raise asRemoteException(ReferenceError)(ReferenceError(),'')
         except asRemoteException(ReferenceError):
             pass
+
+    def test_twice_remote_exception_class_is_once_remote_exception_class(self):
+        excTy = ReferenceError
+        cls1 = asRemoteException(excTy)
+        cls2 = asRemoteException(cls1)
+        self.assertEquals(cls1, cls2)
         
 
 if __name__ == '__main__':

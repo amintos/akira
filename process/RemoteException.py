@@ -68,6 +68,7 @@ or you can catch the remote Exception
     if RemoteException is None:
         RemoteException = _newRemoteException(ErrorType)
         _remoteExceptionCache.setdefault(ErrorType, RemoteException)
+        _remoteExceptionCache.setdefault(RemoteException, RemoteException)
         return _remoteExceptionCache.get(ErrorType)
     return RemoteException
 
