@@ -126,6 +126,14 @@ class MyActiveObject(object):
         self.appendToList(l2, e)
         assert e in l2
         self.appendToList(l, e)
+        return e
+
+    @asExclusiveAccess
+    def waitForOtherActor(self, callback, other, value):
+        l = []
+        v = yield other.appendInside(l, value)
+        assert v is value
+        callback(v + v)
 
 class MyActiveObjectTest(unittest.TestCase):
 
@@ -148,12 +156,12 @@ class MyActiveObjectTest(unittest.TestCase):
         timeout(lambda:l, [])
         self.assertEquals(l, [3])
 
-
-class DeferredMessagesendTest(unittest.TestCase):
+class DeferredMessageSendTest(unittest.TestCase):
 
     def setUp(self):
         self.queue = Queue()
         self.a = MyActiveObject(self.queue)
+        self.b = MyActiveObject(self.queue)
 
     def executeCall(self):
         c = self.queue.get_nowait()
@@ -165,6 +173,14 @@ class DeferredMessagesendTest(unittest.TestCase):
         self.executeCall()
         self.assertEquals(l, [3])
         
+    def test_call_inside_is_executed_inside(self):
+        l = []
+        self.a.appendInside(l, 3)
+        self.executeCall()
+        self.assertEquals(l, [3])
+
+    def test_waitForOtherActor(self):
+        self.a.waitForOtherActor()
 
     
 if __name__ == '__main__':
