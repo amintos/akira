@@ -92,23 +92,46 @@ class CacheTest(unittest.TestCase):
         self.assertEquals(c.read(10), '55555')
 
 
-class MockConnection(object):
+class SecretTest(unittest.TestCase):
 
-    def __init__(self, read, write):
-        self.readPacket = read
-        self.write = write
+    def setUp(self):
+        self.s1 = Secret('1')
+        self.s2 = Secret('2')
+
+    def test_sign(self):
+        a1 = self.s1.sign('a')
+        a2 = self.s2.sign('a')
+        self.assertNotEquals(a1, a2)
+        self.assertTrue(self.s1.isSigned(a1))
+        self.assertTrue(self.s2.isSigned(a2))
+        self.assertFalse(self.s1.isSigned(a2))
+        self.assertFalse(self.s2.isSigned(a1))
+
+    def test_test_sign_on_bad_data(self):
+        self.assertFalse(self.s1.isSigned('123321312312'))
+        self.assertFalse(self.s1.isSigned(self.s1.sign('asadsf') + '1'))
+        self.assertFalse(self.s1.isSigned(self.s1.sign('asadsf')[:-1]))
+
+    def test_get_value_from_signed_stuff(self):
+        s = self.s1.sign('abc')
+        self.assertNotEqual(s, 'abc')
+        self.assertEquals(self.s1.signedPart(s), 'abc')
+        self.assertIn(self.s1.signaturePart(s), s)
+        self.assertEquals(self.s1.signaturePart(s), self.s1.hmac('abc'))
+
 
 class HmacStreamTest(unittest.TestCase):
 
     def setUp(self):
         self.l_12 = [] # connection from 1 to 2
         self.l_21 = []
-        self.c1 = MockConnection(lambda:self.l_21.pop(0), self.l_12.append)
-        self.c2 = MockConnection(lambda:self.l_12.pop(0), self.l_21.append)
         self.secret = Secret('test')
-        self.h1 = HmacStream(self.c1, self.secret)
-        self.h2 = HmacStream(self.c2, self.secret)
-        self.hx = HmacStream(self.c2, Secret('intruder'))
+        self.h1 = HmacStream(self.secret, \
+                             lambda:self.l_21.pop(0), self.l_12.append)
+        self.h2 = HmacStream(self.secret, \
+                             lambda:self.l_12.pop(0), self.l_21.append)
+        self.hx = HmacStream(Secret('intruder'), \
+                             lambda:self.l_12.pop(0), self.l_21.append)
         
     def test_write_and_read(self):
         self.h1.write('hello!')
@@ -146,32 +169,26 @@ class HmacStreamTest(unittest.TestCase):
         shuffle(self.l_12)
         self.assertEquals(self.h2.read(len(s)), s)
 
-class SecretTest(unittest.TestCase):
+    def communicate(self, times = -1):
+        while times != 0:
+            if self.l_21:
+                self.h1.communicate()
+            elif self.l_12:
+                self.h2.communicate()
+            else:
+                break
+            times -= 1
 
-    def setUp(self):
-        self.s1 = Secret('1')
-        self.s2 = Secret('2')
+    def test_lost_packet(self):
+        self.h1.write('1')
+        self.h1.write('2')
+        self.h1.write('3')
+        self.assertEquals(len(self.l_12), 3)
+        p = self.l_12.pop(1)
+        self.communicate(10)
+        self.assertEquals(self.h1.read(3), '123')
 
-    def test_sign(self):
-        a1 = self.s1.sign('a')
-        a2 = self.s2.sign('a')
-        self.assertNotEquals(a1, a2)
-        self.assertTrue(self.s1.isSigned(a1))
-        self.assertTrue(self.s2.isSigned(a2))
-        self.assertFalse(self.s1.isSigned(a2))
-        self.assertFalse(self.s2.isSigned(a1))
-
-    def test_test_sign_on_bad_data(self):
-        self.assertFalse(self.s1.isSigned('123321312312'))
-        self.assertFalse(self.s1.isSigned(self.s1.sign('asadsf') + '1'))
-        self.assertFalse(self.s1.isSigned(self.s1.sign('asadsf')[:-1]))
-
-    def test_get_value_from_signed_stuff(self):
-        s = self.s1.sign('abc')
-        self.assertNotEqual(s, 'abc')
-        self.assertEquals(self.s1.signedPart(s), 'abc')
-        self.assertIn(self.s1.signaturePart(s), s)
-        self.assertEquals(self.s1.signaturePart(s), self.s1.hmac('abc'))
+    
 
 if __name__ == '__main__':
     unittest.main(exit = False)
