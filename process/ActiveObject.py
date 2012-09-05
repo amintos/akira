@@ -10,7 +10,7 @@ from VeryPicklableObject import picklableAttribute
 from reference import Result
 from threading import RLock
 
-from SelfWrap import use_getattribute
+from SelfWrap import use_getattribute, getObject
 
 
 class ActivityQueue(object):
@@ -84,17 +84,18 @@ class ActivityQueue(object):
 class Activity(partial):
 
     def __init__(self, function, reenqueue):
-        self.reenqueue = reenqueue
-        self.function = function
+        self.reenqueue = partial(reenqueue, self)
+        self.function = partial(function, self)
         self.called = False
 
     def __call__(self):
         self.called = True
-        return self.function(self)
+        print self.function.func, self.function.args
+        return self.function()
 
     def __del__(self):
         if not self.called:
-            self.reenqueue(self)
+            self.reenqueue()
         
 class ActiveAttribute(object):
 
@@ -105,17 +106,17 @@ class ActiveAttribute(object):
         return self.function(activeObject, result, args, kw)
 
 
-def activeClass(BaseClass, ActivityConstructor = FirstActivity):
-    from thread import get_ident as getThreadID
+def activeClass(BaseClass):
+    from thread import get_ident as getThreadId
 
     insideActiveObject = use_getattribute(BaseClass)
     
     class ActiveClass(BaseClass):
 
         newResult = Result
-        newActivity = Activity
 
-        directAccess = ('__reduce__', '__reduce_ex__', '__enter__', '__exit__')
+        directAccess = ('__reduce__', '__reduce_ex__', '__enter__', '__exit__', \
+                        'active')
 
         #
         # methods using the lock
@@ -123,19 +124,21 @@ def activeClass(BaseClass, ActivityConstructor = FirstActivity):
 
         @insideActiveObject
         def __enter__(self):
-            assert self.__lock.acquire(False), 'used by an other thread'
+            print 'enter'
+            assert self.__insideActivity.acquire(False), \
+                   'I am active in an other thread.'
 
         @insideActiveObject
         def __exit__(self, *args):
-            self.__lock.release()
+            self.__insideActivity.release()
 
-        def __init__(self, *args, **kw):
+        def __init__(self, queue, *args, **kw):
             with self:
                 BaseClass.__init__(self, *args, **kw)
 
         @insideActiveObject
         def enqueueActivity(self):
-            with self:
+            with self.active:
                 assert self.__activityWaitingToBeFulfilled is None
                 activity = self.activities.pop(0)
                 self.__activityWaitingToBeFulfilled = activity
@@ -143,14 +146,14 @@ def activeClass(BaseClass, ActivityConstructor = FirstActivity):
 
         @insideActiveObject
         def appendActivity(self, function):
-            activity = self.newActivity(function, self.reenqueueActivity)
+            activity = self.newActivity(function)
             with self.__lock:
                 self.activities.append(activity)
             self.notifyAboutActivities()
 
         @insideActiveObject
         def injectActivity(self, function):
-            activity = self.newActivity(activity, self.reenqueueActivity))
+            activity = self.newActivity(function)
             with self.__lock:
                 self.activities.insert(0, activity)
             self.notifyAboutActivities()
@@ -158,6 +161,7 @@ def activeClass(BaseClass, ActivityConstructor = FirstActivity):
         @insideActiveObject
         def reenqueueActivity(self, activity):
             if self.__deleted:
+                ## todo: test deleted add
                 return 
             assert activity is self.__activityWaitingToBeFulfilled
             with self.__lock:
@@ -176,19 +180,24 @@ def activeClass(BaseClass, ActivityConstructor = FirstActivity):
             assert self.__activityWaitingToBeFulfilled is activity, \
                    'can not fulfill an activity out of order'
             try:
-                attribute = getattr(self, name)
-                if issubclass(type(attribute), ActiveAttribute):
-                    attribute(self, args, kw, result)
-                else:
-                    self._callMethod(attribute, args, kw)
+                try:
+                    with self.active:
+                        attribute = getattr(self, name)
+                        if issubclass(type(attribute), ActiveAttribute):
+                            attribute(self.active, args, kw, result)
+                        else:
+                            self._callMethod(attribute, args, kw, result)
+                except:
+                    ty, err, tb = RemoteException.exc_info()
+                    result.setError(ty, err, tb)
             finally:
                 self.__activityWaitingToBeFulfilled = None
                 self.notifyAboutActivities()
 
         @insideActiveObject
         def __getattribute__(self, name):
-            print '__getattribute__', BaseClass, name
-            if self.__lock._is_owned():
+            print '__getattribute__', BaseClass.__name__, name
+            if self.__insideActivity._is_owned():
                 return getattr(self, name)
             if name in self.directAccess:
                 return getattr(self, name)
@@ -200,21 +209,23 @@ def activeClass(BaseClass, ActivityConstructor = FirstActivity):
 
         def __new__(cls, activityQueue, *args, **kw):
             obj = BaseClass.__new__(cls, *args, **kw)
-            cls.initActiveObject(obj, activityQueue, ActivityConstructor)
+            cls.initActiveObject(obj, activityQueue)
             return obj
 
         @insideActiveObject
-        def initActiveObject(self, activityQueue, ActivityConstructor):
-            print 'init', activityQueue, ActivityConstructor
+        def initActiveObject(self, activityQueue):
+            print 'init', activityQueue
             self.activities = []
             self.__lock = RLock()
+            self.__insideActivity = RLock()
             self.__activityQueue = activityQueue
             self.__activityWaitingToBeFulfilled = None
             self.__deleted = False
 
         @insideActiveObject
-        def _callMethod(self, attribute, args, kw)
+        def _callMethod(self, attribute, args, kw, result):
             try:
+                print 'call:', attribute, args, kw
                 value = attribute(*args, **kw)
             except:
                 ty, err, tb = RemoteException.exc_info()
@@ -234,10 +245,22 @@ def activeClass(BaseClass, ActivityConstructor = FirstActivity):
         def __del__(self):
             self.__deleted = True
 
+        @insideActiveObject
+        def newActivity(self, function):
+            if issubclass(type(function), Activity):
+                return function
+            return Activity(function, self.reenqueueActivity)
+
+        @property
+        @insideActiveObject
+        def active(self):
+            'this should usually be self or if @insideActiveObject, the real self'
+            return getObject(self)
+
         
     ActiveClass.__name__ = BaseClass.__name__
     ActiveClass.__module__ = BaseClass.__module__
     ActiveClass.insideActiveObject = staticmethod(insideActiveObject)
     return ActiveClass
 
-__all__ = ['ActiveObject', 'ActivityQueue', 'activeClass', 'asExclusiveAccess']
+__all__ = ['ActivityQueue', 'activeClass']
