@@ -1,6 +1,14 @@
+import sys
 import traceback
 import StringIO
+import Process
 from copy_reg import dispatch_table, pickle
+
+def exc_info():
+    '''as sys.exc_info() but returns a remote exception object'''
+    ErrorType, thrownError, traceback = sys.exc_info()
+    err = withTracebackPrint(ErrorType, thrownError, traceback)
+    return type(err), err, traceback
 
 def withTracebackPrint(ErrorType, thrownError, _traceback):
     '''returns an Exception object for the given ErrorType of the thrownError
@@ -8,7 +16,7 @@ and the _traceback
 
 can be used like withTracebackPrint(*sys.exc_info())'''
     file = StringIO.StringIO()
-    file.write('\n')
+    file.write('\nin %s ' % (Process.thisProcess,))
     traceback.print_exception(ErrorType, thrownError, _traceback, file = file)
     return _loadError(ErrorType, thrownError, file.getvalue())
     ## why don't we just use the following line?
@@ -78,4 +86,4 @@ def _loadError(ErrorType, thrownError, tracebackString):
     return RemoteException(thrownError, tracebackString)
     
     
-__all__ = ['withTracebackPrint', 'asRemoteException']
+__all__ = ['withTracebackPrint', 'asRemoteException', 'exc_info']

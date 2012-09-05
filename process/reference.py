@@ -146,6 +146,9 @@ class Result(ApplyResult):
         self.error = (ty, err, tb)
         self._set(None, (False, err))
 
+    def getError(self):
+        return self.error
+
 def _async_execute(resultReference, reference, methodName, args, kw, \
                    exc_info = exc_info_print_traceback):
     '''execute the asynchronous call in the local process'''
