@@ -99,12 +99,12 @@ class Secret(object):
     def isSigned(self, string):
         return self.hmac(self.signedPart(string)) == self.signaturePart(string)
 
-
 class HmacStream(object):
 
-    def __init__(self, nextStream, secret):
+    def __init__(self, secret, readPacket, write):
         self._secret = secret
-        self._nextStream = nextStream
+        self._readPacket = readPacket
+        self._write = write
         self._readCache = Cache()
         startSignature = secret.signaturePart(secret.sign(''))
         self._write_preceedingSignature = startSignature
@@ -116,7 +116,7 @@ class HmacStream(object):
         assert len(self._write_preceedingSignature) ==secret.signatureLength
         message = self._write_preceedingSignature + string
         signedPacket = secret.sign(message)
-        self._nextStream.write(signedPacket)
+        self._write(signedPacket)
         self._write_preceedingSignature = secret.signaturePart(signedPacket)
 
     def read(self, size):
@@ -126,9 +126,10 @@ class HmacStream(object):
         return self._readCache.read(size)
 
     def _pullPacket(self):
-        s = self._nextStream.readPacket()
+        s = self._readPacket()
         if self._secret.isSigned(s):
             secret = self._secret
+            p = Packet(s, self._secret)
             signature = self._secret.signaturePart(s)
             message = secret.signedPart(s)
             preceedingSignature = message[:secret.signatureLength]
@@ -143,5 +144,8 @@ class HmacStream(object):
             signature, string = message
             self._readCache.cache(string)
             self._read_preceedingSignature = signature
+
+    def communicate(self):
+        pass
     
 __all__ = ['PacketWriter', 'HmacStream', 'Secret', 'Cache']
