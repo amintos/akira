@@ -4,6 +4,7 @@ from LocalObjectDatabase import LocalObjectDatabase
 
 from proxy import Proxy, insideProxy, outsideProxy
 from multiprocessing.pool import ApplyResult
+from thread import allocate_lock
 import RemoteException
 
 class Objectbase(LocalObjectDatabase):
@@ -138,6 +139,23 @@ class Result(ApplyResult):
 
     def __init__(self, callback = None):
         ApplyResult.__init__(self, {}, callback)
+        self._lock = allocate_lock()
+        self.onReadyNotify = []
+
+    def onReady(self, callable):
+        if self.ready():
+            return callable(self)
+        with self._lock:
+            if self.ready():
+                return callable(self)
+            self.onReadyNotify.append(callable)
+
+    def _set(self, *args):
+        with self._lock:
+            ApplyResult._set(self, *args)
+            if self.ready():
+                while self.onReadyNotify:
+                    self.onReadyNotify.pop()(self)
         
     def setValue(self, value):
         self._set(None, (True, value))
@@ -148,6 +166,11 @@ class Result(ApplyResult):
 
     def getError(self):
         return self.error
+
+    def __del__(self):
+        if not self.ready():
+            while self.onReadyNotify:
+                self.onReadyNotify.pop()(self)
 
 def _async_execute(resultReference, reference, methodName, args, kw, \
                    exc_info = exc_info_print_traceback):

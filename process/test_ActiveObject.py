@@ -135,13 +135,46 @@ class MyActiveObject(object):
         self.appendToList(l, e)
         return e
 
-    ## asExclusiveAccess is senseless
+    @stepByStep
     def waitForOtherActor(self, callback, other, value):
         l = []
         v = yield other.appendInside(l, value)
         assert v is value
         callback(v + v)
 
+class DeferredMessageSendTest(unittest.TestCase):
+
+    def setUp(self):
+        self.queue = Queue()
+        self.a = MyActiveObject(self.queue, None)
+        self.b = MyActiveObject(self.queue, None)
+
+    def executeCall(self):
+        c = self.queue.get_nowait()
+        c()
+
+    def test_append_to_list(self):
+        l = []
+        self.a.appendToList(l, 3)
+        self.executeCall()
+        self.assertEquals(l, [3])
+        
+    def test_call_inside_is_executed_inside(self):
+        l = []
+        self.a.appendInside(l, 3)
+        self.executeCall()
+        self.assertEquals(l, [3])
+
+    @unittest.skip('this has to be implemented in future')
+    def test_waitForOtherActor(self):
+        v = self.a.waitForOtherActor(self.b, 'hallo')
+        self.executeCall()
+        self.executeCall()
+        self.executeCall()
+        self.assertTrue(v.ready())
+        self.assertEquals(v.get(), 'hallo' * 2)
+        
+        
 class MyActiveObjectTest(unittest.TestCase):
 
     def setUp(self):
@@ -168,31 +201,6 @@ class MyActiveObjectTest(unittest.TestCase):
         timeout(lambda:l, [])
         self.assertEquals(l, [3])
 
-class DeferredMessageSendTest(unittest.TestCase):
-
-    def setUp(self):
-        self.queue = Queue()
-        self.a = MyActiveObject(self.queue, None)
-        self.b = MyActiveObject(self.queue, None)
-
-    def executeCall(self):
-        c = self.queue.get_nowait()
-        c()
-
-    def test_append_to_list(self):
-        l = []
-        self.a.appendToList(l, 3)
-        self.executeCall()
-        self.assertEquals(l, [3])
-        
-    def test_call_inside_is_executed_inside(self):
-        l = []
-        self.a.appendInside(l, 3)
-        self.executeCall()
-        self.assertEquals(l, [3])
-
-    def test_waitForOtherActor(self):
-        self.a.waitForOtherActor()
 
 ## todo: reference tests multi-process
     

@@ -90,7 +90,6 @@ class Activity(partial):
 
     def __call__(self):
         self.called = True
-        print self.function.func, self.function.args
         return self.function()
 
     def __del__(self):
@@ -98,11 +97,16 @@ class Activity(partial):
             self.reenqueue()
         
 class ActiveAttribute(object):
+    '''Base class for custom attributes for active objects.
+Suclasses do not have to worry about thread safety:
+They will only be called in one thread at a time.'''
 
     def __init__(self, function):
+        'example'
         self.function = function
 
     def __call__(self, activeObject, result, args, kw):
+        'example'
         return self.function(activeObject, result, args, kw)
 
 
@@ -124,7 +128,6 @@ def activeClass(BaseClass):
 
         @insideActiveObject
         def __enter__(self):
-            print 'enter'
             assert self.__insideActivity.acquire(False), \
                    'I am active in an other thread.'
 
@@ -161,7 +164,7 @@ def activeClass(BaseClass):
         @insideActiveObject
         def reenqueueActivity(self, activity):
             if self.__deleted:
-                ## todo: test deleted add
+                ## todo: test deleted
                 return 
             assert activity is self.__activityWaitingToBeFulfilled
             with self.__lock:
@@ -176,7 +179,6 @@ def activeClass(BaseClass):
                 
         @insideActiveObject
         def _fulfillActivity(self, name, args, kw, result, activity):
-            print 'callMethod', name, args, kw
             assert self.__activityWaitingToBeFulfilled is activity, \
                    'can not fulfill an activity out of order'
             try:
@@ -196,7 +198,6 @@ def activeClass(BaseClass):
 
         @insideActiveObject
         def __getattribute__(self, name):
-            print '__getattribute__', BaseClass.__name__, name
             if self.__insideActivity._is_owned():
                 return getattr(self, name)
             if name in self.directAccess:
@@ -214,7 +215,6 @@ def activeClass(BaseClass):
 
         @insideActiveObject
         def initActiveObject(self, activityQueue):
-            print 'init', activityQueue
             self.activities = []
             self.__lock = RLock()
             self.__insideActivity = RLock()
@@ -225,7 +225,6 @@ def activeClass(BaseClass):
         @insideActiveObject
         def _callMethod(self, attribute, args, kw, result):
             try:
-                print 'call:', attribute, args, kw
                 value = attribute(*args, **kw)
             except:
                 ty, err, tb = RemoteException.exc_info()
@@ -235,7 +234,6 @@ def activeClass(BaseClass):
 
         @insideActiveObject
         def _createActivity(self, name, *args, **kw):
-            print 'create activity', name, args, kw
             result = self.newResult()
             call = partial(self._fulfillActivity, name, args, kw, result)
             self.appendActivity(call)
@@ -256,11 +254,48 @@ def activeClass(BaseClass):
         def active(self):
             'this should usually be self or if @insideActiveObject, the real self'
             return getObject(self)
-
         
     ActiveClass.__name__ = BaseClass.__name__
     ActiveClass.__module__ = BaseClass.__module__
     ActiveClass.insideActiveObject = staticmethod(insideActiveObject)
     return ActiveClass
 
-__all__ = ['ActivityQueue', 'activeClass']
+
+class ValueReturned(StopIteration):
+    'this error is called when a callback was successfully called'
+    pass
+
+class SteppingCall(object):
+
+    def __init__(self, aCallable, activeObject, result, args, kw):
+        raise NotImplementedError('todo')
+        self.result = result
+        self.activeObject = activeObject
+        self.iterable = aCallable(self.callback, *args, **kw)
+
+    def nextStep(self, resultObject):
+        try:
+            while not self.isResultObject(resultObject) is None:
+                resultObject = next(self.iterable)
+                resultObject.onChange(self.nextStep)
+        except ValueReturned:
+            pass
+        except StopIteration:
+            self.result.setValue(None)
+        except:
+            ty, err, tb = RemoteException.exc_info()
+            self.result.setError(ty, err, tb)
+
+class stepByStep(object):
+    SteppingCall = SteppingCall
+    
+    def __init__(self, function):
+        self.function = function
+    
+    def __get__(self, obj, cls = None):
+        return partial(self.SteppingCall, self.function.__get__(obj, cls))
+
+            
+    
+
+__all__ = ['ActivityQueue', 'activeClass', 'stepByStep']
