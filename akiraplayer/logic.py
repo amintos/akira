@@ -1,12 +1,35 @@
 from collections import defaultdict
 
+
+class TheoryMethod(list):
+
+    def __init__(self, theory):
+        self._theory = theory
+        list.__init__(self)
+
+    @property
+    def name(self):
+        return self[0].functor
+
+    def __call__(self, *args):
+        for term in self:
+            term.match(*args)
+
 class Theory(object):
 
+    def newTheoryMethod(self):
+        return TheoryMethod(self)
+
     def __init__(self, gdl):
-        self.statements = defaultdict(lambda: [])   # { predicate : statement }
+        self.statements = defaultdict(self.newTheoryMethod) # { predicate : statement }
         for gdl_statement in gdl:
             term = Term.from_gdl(gdl_statement)
             self.statements[term.functor].append(term)
+
+    @property
+    def methodDictionairy(self):
+        return self.statements
+
 
 # -----------------------------------------------------------------------------
 # TERMS
@@ -18,12 +41,21 @@ class Term(object):
         self.functor = functor
         self.arity = 0
 
+    def isAtom(self):
+        return False
+
     @staticmethod
     def from_gdl(gdl):
         if isinstance(gdl, str):
             return Atom.from_gdl(gdl)
         else:
             return CompoundTerm.from_gdl(gdl)
+
+    def match(self, *args):
+        raise NotImplementedError('to be implemented in subclasses')
+
+    def __repr__(self):
+        return '<%s %s>' % (self.__class__.__name__, self.functor)
 
 # -----------------------------------------------------------------------------
 # 0-ARY TERMS
@@ -32,6 +64,9 @@ class Atom(Term):
 
     def __init__(self, name):
         Term.__init__(self, name)
+
+    def isAtom(self):
+        return True
 
     def data(self):
         return self.functor
@@ -42,6 +77,18 @@ class Atom(Term):
             return Variable(gdl[1:])
         else:
             return Atom(gdl)
+
+    def match(self, a, cb):
+        if a is _:
+            cb(self.functor)
+        elif a == self.functor:
+            cb()
+
+    def __eq__(self, other):
+        return other == self.functor
+
+    def __ne__(self, other):
+        return not self == other
 
 
 class Variable(Atom):
@@ -70,6 +117,23 @@ class CompoundTerm(Term):
         else:
             return CompoundTerm(functor, map(Term.from_gdl, gdl[1:]))
 
+    def match(self, *args):
+        cb = args[-1]
+        args = args[:-1]
+        v = []
+        for arg1, arg2 in zip(self.args, args):
+            assert arg1.isAtom(), '%s is no atom' % (arg1,)
+            if arg2 is _:
+                v.append(arg1)
+            elif arg1 != arg2:
+                print repr(arg1), '!=', repr(arg2)
+                break
+        else:
+            cb(*v)
+
+    def __repr__(self):
+        return '<%s %s: %s>' % (self.__class__.__name__, self.functor, \
+                                ','.join(map(repr, self.args)))
 
 class BinaryTerm(CompoundTerm):
 
@@ -181,6 +245,8 @@ class logic(object):
     # functions
     #
 
+    def __init__(self, theory):
+        self.__dict__ = theory.methodDictionairy
     
 class _:
     pass

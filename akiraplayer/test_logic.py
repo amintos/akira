@@ -58,7 +58,12 @@ class LogicTest(unittest.TestCase):
     def setUp(self):
         self.logic = logic.fromString(self.code)
         self.values = []
-        self.c = lambda *args: self.values.append(args)
+    def c(self, *args):
+        l = []
+        for arg in args:
+            assert arg.isAtom()
+            l.append(arg.functor)
+        self.values.append(tuple(l))
 
     def assertEvaluated(self, expectedValues):
         self.assertEquals(set(self.values), set(expectedValues))
@@ -94,10 +99,10 @@ class SuccessorTest(LogicTest):
         expectedValues = set([(str(x), str(x + 1)) for x in range(1, 6)])
         self.assertEquals(set(self.values), expectedValues)
 
-class Successor2Test(SuccessorTest):
+class PredecessorTest(SuccessorTest):
     code = SuccessorTest.code + '''
 
-(<= (p ?x ?y) (s y x))
+(<= (p ?x ?y) (s ?y ?x))
 
 '''
 
@@ -151,6 +156,13 @@ class SumTest(LogicTest):
         self.assertEvaluated(set([('1', '1'), ('2', '3'), ('3', '6')]))
 
 
+##class MatchTest(unittest.TestCase):
+##
+##    def test_atom_matches_itself(self):
+##        a = Atom('a')
+##        self.assertTrue(a.matches(a))
+##        self.assertTrue(a.matches(Atom(a)))
         
 if __name__ == '__main__':
-    unittest.main(exit = False)
+    dT = None; 'SumTest'
+    unittest.main(defaultTest = dT, exit = False)
