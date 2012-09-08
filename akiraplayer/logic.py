@@ -131,3 +131,16 @@ TERM_CLASSES = {
     'next'  : CompoundTerm,
     'does'  : CompoundTerm,
 }
+
+# -----------------------------------------------------------------------------
+#
+
+class logic(object):
+    s = None
+    @classmethod
+    def fromString(cls, string):
+        return cls()
+
+_ = None
+
+__all__ = ['_', 'logic']

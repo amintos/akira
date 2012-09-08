@@ -50,5 +50,73 @@ class TermInterpretationTest(unittest.TestCase):
         self.assertIn('b', t.statements)
         self.assertEqual('a', t.statements['b'][0].body[0].functor)
 
+
+class SuccessorTest(unittest.TestCase):
+
+    code = '''
+(s 1 2)
+(s 2 3)
+(s 3 4)
+(s 4 5)
+(s 5 6)
+'''
+
+    def setUp(self):
+        self.logic = logic.fromString(self.code)
+        self.values = []
+        self.c = lambda *args: self.values.append(args)
+
+    def test_get_successor_1(self):
+        self.logic.s('1', _, self.c)
+        self.assertEquals(self.values, [('2',)])        
+        
+    def test_get_successor_nothing(self):
+        self.logic.s('nothing', _, self.c)
+        self.assertEquals(self.values, [])
+
+    def test_get_inverse_successor(self):
+        self.logic.s(_, '4', self.c)
+        self.assertEquals(self.values, [('3',)])
+        
+    def test_verify_successor(self):
+        self.logic.s('3', '4', self.c)
+        self.assertEquals(self.values, [()])
+        
+    def test_all_successors(self):
+        self.logic.s(_, _, self.c)
+        expectedValues = set([(x, x + 1) for x in range(1, 6)])
+        self.assertEquals(set(self.values), expectedValues)
+
+class Successor2Test(SuccessorTest):
+    code = SuccessorTest.code + '''
+
+(<= (p ?x ?y) (s y x))
+
+'''
+
+    def test_predecessor_of_1(self):
+        self.logic.p('1', _, self.c)
+        self.assertEquals(self.values, [])
+
+    def test_predecessor_of_2(self):
+        self.logic.p('2', _, self.c)
+        self.assertEquals(self.values, [('1',)])
+
+    def test_predecessor_equals_successor(self):
+        def f(x, y):
+            l = []
+            def g():
+                l.append('called')
+            self.logic.s(y, x, g)
+            self.assertEquals(l, ['called'])
+        for i in range(1, 6):
+            self.logic.p(_, _, f)
+
+    def test_p_yields_all_values(self):
+        self.logic.p(_, _, self.c)
+        expectedValues = set([(x + 1, x) for x in range(1, 6)])
+        self.assertEquals(set(self.values), expectedValues)
+
+
 if __name__ == '__main__':
     unittest.main(exit = False)
