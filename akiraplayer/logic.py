@@ -2,11 +2,14 @@ from collections import defaultdict
 
 class Theory(object):
 
-    def __init__(self, gdl):
+    def __init__(self, gdl = list()):
         self.statements = defaultdict(lambda: [])   # { predicate : statement }
         for gdl_statement in gdl:
-            term = Term.from_gdl(gdl_statement)
-            self.statements[term.functor].append(term)
+            self.hold(Term.from_gdl(gdl_statement))
+
+    def hold(self, term):
+        self.statements[term.functor].append(term)
+        return self
 
 # -----------------------------------------------------------------------------
 # TERMS
