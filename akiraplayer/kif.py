@@ -103,3 +103,7 @@ class Formatter(object):
         if not self.out:
             self.out = self.format_item(self.data_tuple)
         return self.out
+
+def parse(raw_gdl):
+    p = Parser(raw_gdl)
+    return p.ast()

@@ -136,11 +136,54 @@ TERM_CLASSES = {
 #
 
 class logic(object):
-    s = None
+##    def s(self, x, y, c):
+##        if x == 'nothing' or y == '1':
+##            return 
+##        if x is not _ and y is not _:
+##            if int(x) - int(y) == -1:
+##                c()
+##        elif x is _ and y is not _:
+##            c(str(int(y) - 1))
+##        elif y is _ and x is not _:
+##            c(str(int(x) + 1))
+##        else:
+##            for i in range(1, 6):
+##                c(str(i), str(i + 1))
+##
+##    def p(self, x, y, c):
+##        if x == y == _:
+##            _c = c
+##            c = lambda x, y: _c(y, x)
+##        self.s(y, x, c)
+
+    #
+    # class side constuctor
+    #
+
+    theoryFromGdl = Theory
+    
     @classmethod
     def fromString(cls, string):
-        return cls()
+        import kif
+        gdl = kif.parse(string)
+        return cls.fromGdl(gdl)
 
-_ = None
+    @classmethod
+    def fromGdl(cls, gdl):
+        theory = cls.theoryFromGdl(gdl)
+        return cls.fromTheory(theory)
 
-__all__ = ['_', 'logic']
+    @classmethod
+    def fromTheory(cls, theory):
+        return cls(theory)
+
+    #
+    # functions
+    #
+
+    
+class _:
+    pass
+
+__all__ = ['_', 'logic', 'Theory', 'Term', 'Rule', 'Variable', 'Or', 'Atom', \
+           'Not']
