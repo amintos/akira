@@ -214,12 +214,25 @@ class CompileTest(unittest.TestCase):
 
 
     def test_rule_with_one_term(self):
-        t = Theory((('<=', ('a', 'b'), ('b', 'x')),))
+        t = Theory((('<=', ('a', 'b'), ('b', 'x')), ('b', 'x')))
         self.assertEquals(t.compiled(), '''def a_(a1, callback):
-    def callb_(a1):
+    def callback_(a1):
         assert a1 == "x_"
         callback("b_")
-    b_("x_", callb_)''')
+    b_("x_", callback_)
+def b_(a1, callback):
+    if a1 == "x_": callback("x_")''')
+        l = []
+        t.functions['a_'](_, l.append)
+        self.assertEquals(l, ["b_"])
+
+    def test_rule_with_one_term2(self):
+        t = Theory((('<=', ('a', 'b'), ('b', 'x')), ('b', 'y')))
+        l = []
+        t.functions['a_'](_, l.append)
+        self.assertEquals(l, [])
+        
+
         
 if __name__ == '__main__':
     dT = 'CompileTest';None; 'SumTest'

@@ -7,7 +7,7 @@ def toVariableName(string):
     return string.encode('hex')
 
 def ident(string):
-    return string.replace('\n', '\n    ')
+    return '    ' + string.replace('\n', '\n    ')
 
 
 
@@ -22,6 +22,10 @@ class TheoryMethod(list):
         return self[0].functor
 
     @property
+    def compiledName(self):
+        return self[0].compiledName
+
+    @property
     def argumentString(self):
         return self[0].argumentString
 
@@ -31,10 +35,10 @@ class TheoryMethod(list):
 
 
     def compiled(self):
-        s = 'def %s(%s):\n    ' % (toVariableName(self.name), \
+        s = 'def %s(%s):\n' % (self.compiledName, \
                                    self.argumentString)
         l = [ident(term.compiled()) for term in self]
-        return s + '\n    '.join(l)
+        return s + '\n'.join(l)
     
 class Theory(object):
 
@@ -48,8 +52,13 @@ class Theory(object):
             term = Term.from_gdl(gdl_statement)
             self.statements[term.functor].append(term)
         self.functions ={}
-        
-        exec self.compiled() in self.functions
+
+        c = self.compiled()
+        try:
+            exec c in self.functions
+        except:
+            print c
+            raise
 
     @property
     def methods(self):
@@ -173,12 +182,15 @@ class CompoundTerm(Term):
         assert all(map(lambda a: a.isAtom(), self.args)), 'no variables allowed'
         ands = ['%s == %s' % (argumentName, self.args[i].compiled()) \
                 for i, argumentName in enumerate(self.callbackArguments)]
-        callbackValues = ', '.join([atom.compiled() for atom in self.args])
         return 'if %s: callback(%s)' % (' and '.join(ands), \
-                                        callbackValues)
+                                        self.callbackValueString)
     @property
     def callbackArguments(self):
         return ['a%i' % i for i in range(1, len(self.args) + 1)]
+
+    @property
+    def callbackArgumentString(self):
+        return ', '.join(self.callbackArguments)
 
     @property
     def argumentNames(self):
@@ -187,6 +199,22 @@ class CompoundTerm(Term):
     @property
     def argumentString(self):
         return ', '.join(self.argumentNames)
+
+    @property
+    def compiledName(self):
+        return toVariableName(self.functor)
+
+    @property
+    def callbackValueString(self):
+        return ', '.join([atom.compiled() for atom in self.args])
+
+    def calling(self, callback):
+        cba = self.callbackValueString
+        if cba:
+            args = cba + ', ' + callback
+        else:
+            args = callback
+        return '%s(%s)' % (self.compiledName, args)
 
 class BinaryTerm(CompoundTerm):
 
@@ -229,6 +257,22 @@ class Rule(CompoundTerm):
         self.head = head
         self.body = body
 
+    @property
+    def callbackArguments(self):
+        return self.head.callbackArguments
+
+    @property
+    def argumentNames(self):
+        return self.head.argumentNames
+
+    @property
+    def argumentString(self):
+        return self.head.argumentString
+
+    @property
+    def callbackValueString(self):
+        return self.head.callbackValueString
+
     @staticmethod
     def from_gdl(gdl):
         return Rule(Term.from_gdl(gdl[1]), map(Term.from_gdl, gdl[2:]))
@@ -237,7 +281,13 @@ class Rule(CompoundTerm):
         print self.body
 
     def compiled(self):
-        pass
+        c1 = self.body[0].callbackArgumentString
+        s = 'def callback_(%s):\n' % c1
+        s += ident('assert %s == %s\n' % (c1, self.body[0].callbackValueString))
+        print c1
+        s += 'callback(%s)\n' % self.callbackValueString
+        s += self.body[0].calling('callback_')
+        return s
 
 # -----------------------------------------------------------------------------
 # Mapping from special functors to term subclasses
