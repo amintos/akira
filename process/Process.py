@@ -86,6 +86,8 @@ class ProcessInOtherProcess(Process):
     ## seconds to try to reestablish connection to the process
     minimumConnectionTrySeconds = 20
 
+    debuglevel = 0
+
     def __init__(self, *args):
         Process.__init__(self, *args)
         self._connectionPossibilities = []
@@ -95,6 +97,10 @@ class ProcessInOtherProcess(Process):
         self._callQueue = None
         self._markedAsAlive = False
         self._triedToConnectOnce = False
+
+    def debug(self, *args):
+        if self.debuglevel >= 1:
+            print '%s ' * len(args) % args
 
     def markAsDead(self):
         self._markedAsDead = True
@@ -124,7 +130,7 @@ class ProcessInOtherProcess(Process):
         try:
             connection = connectionPossibility()
             if connection:
-##                print 'addConnection', connection
+                self.debug('addConnection', connection)
                 self.addConnection(connection)
         finally:
             notify()
@@ -139,9 +145,9 @@ class ProcessInOtherProcess(Process):
         def notify():
             released = False
             for p in connectionPossibilities[1:]:
-##                print 'relesed:', released
+                self.debug('released:', released)
                 if not released and self.hasConnections():
-##                    print 'release'
+                    self.debug('release')
                     l.release()
                     released = True
                 yield
@@ -155,7 +161,7 @@ class ProcessInOtherProcess(Process):
         for possibility in connectionPossibilities:
             thread.start_new(self._connect, (possibility, notify))
         l.acquire()
-##        print 'hasconnection!!!'
+        self.debug('hasconnection!!!')
 
     @picklableAttribute
     def call(self, function, args, kw = {}):
@@ -163,7 +169,7 @@ class ProcessInOtherProcess(Process):
         if aConnection is None:
             self.queueCall(function, args, kw)
             return 
-##        print 'connectionChosen'
+        self.debug('connectionChosen')
         try:
             aConnection.call(function, args, kw)
             return
@@ -172,7 +178,7 @@ class ProcessInOtherProcess(Process):
             self.removeConnection(aConnection)
 
     def queueCall(self, function, args, kw = {}):
-##        print 'QueueCall'
+        self.debug('QueueCall')
         if not self._emptyCallQueueThread: # speed up - no lock
             with self._lock:
                 if not self._callQueue:
@@ -190,10 +196,10 @@ class ProcessInOtherProcess(Process):
         ttl = lambda: t + self.minimumConnectionTrySeconds - time.time()
         for i in range(self.callAttempts):
             call = queue.get(timeout = ttl())
-##            print 'create connection'
+            self.debug('create connection')
             if not self.hasConnections():
                 self.newConnection()
-##            print 'call'
+            self.debug('call')
             self.call(*call)
             if  0 < ttl():
                 break

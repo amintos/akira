@@ -22,7 +22,7 @@ What is to be done
 
 - packet encryption
 
-- educe stderr output from other processes
+- reduce stderr output from other processes
 
 - debugging of processes
 

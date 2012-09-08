@@ -6,7 +6,7 @@ from functools import partial
 from multiprocessing.pool import Pool
 from LocalObjectDatabase import LocalObjectDatabase
 from StringIO import StringIO
-from pickle import loads, dumps
+from pickle import loads, dumps, PicklingError, UnpicklingError
 
 from Process import thisProcess
 from test_multi_Process import timeout, TIMEOUT
@@ -14,19 +14,24 @@ from reference import *
 
 
 class MockReference(object):
+    process = None
 
     def __init__(self, value):
         self.value = value
 
-    def islocal(self):
+    def isLocal(self):
         return True
 
     def localProcess(self):
         return thisProcess
 
-class ProxyTest(unittest.TestCase):
+    def isMockReference(self):
+        return True
 
-    Proxy = Proxy
+class ProxyTest(unittest.TestCase):
+    maxDiff = None
+
+    Proxy = ReferenceProxy
 
     def test_call_of_method(self):
         called = [False]
@@ -41,24 +46,45 @@ class ProxyTest(unittest.TestCase):
 
     def test_pass_args_to_method(self):
         l = []
-        obj = object()
+        obj = X()
+        obj.process = None
+        obj.isLocal = None
         def method(*args, **kw):
             l.append((args, kw))
 
-        p = Proxy(method, obj)
+        p = self.Proxy(method, obj)
         p.append(3,4, a = '3')
         t = l[0]
         self.assertEquals(t[1], {})
         args = t[0]
-        self.assertIs(args[0], obj)
-        self.assertEquals(args[1], 'append')
+        self.assertEquals(args[1], '__call__')
         self.assertEquals(args[2], (3,4))
         self.assertEquals(args[3], {'a':'3'})
 
 
     def test_add(self):
-        p = Proxy(sync, ref(1))
+        p = self.Proxy(sync, ref(1))
         self.assertEquals(p + 1, 2)
+
+
+    class X(object): ## todo: test with oldstyle
+        a = 1
+        def f():pass
+        __reduce__ = __reduce_ex__ = 1
+
+    def test_attributes_are_the_same_plus_exceptions(self):
+        self.assertDir(self.X())
+
+    def assert_class_objects_can_be_listed(self):
+        self.assertDir(self.X)
+
+    def assertDir(self, o):
+        l = dir(o)
+        l.sort()
+        p = self.Proxy(sync, ref(o))
+        l2 = dir(p)
+        l2.sort()
+        self.assertEquals(l2, l)
         
 
 class TestObject(object):
@@ -131,8 +157,9 @@ from another process to local references of this process.
 
     @classmethod
     def tearDownClass(cls):
-        cls.pool.close()
-        cls.pool.join()
+##        cls.pool.close()
+##        cls.pool.join()
+        pass
 
     def setUp(self):
         global value
@@ -204,7 +231,7 @@ class AsyncTest(TestBase):
     def test_setValue_error(self):
         v = self.pool.apply_async(_call_async, (self.ref, 'setValueWithError', \
                                           ('aValue',), {}))
-        v = v.get(TIMEOUT)
+        v = v.get(TIMEOUT * 2)
         self.assertEquals(v[0], MyError)
         self.assertEquals(v[1].args, ('error!',))
         self.assertEquals(self.x.value, 'aValue')
@@ -278,7 +305,7 @@ class CallbackTest(TestBase):
         self.assertEqual(value, ('s', 3))
 
 class ReferenceTest(unittest.TestCase):
-
+    
 
     def test_sync(self):
         obj = []
@@ -292,7 +319,7 @@ class ReferenceTest(unittest.TestCase):
         p2 = reference(p, async)
         self.assertIsNot(p2, p)
         self.assertEquals(referenceMethod(p2), async)
-
+ 
     def test_reduce(self):
         l = []
         class X(object):
@@ -307,11 +334,88 @@ class ReferenceTest(unittest.TestCase):
         self.assertEquals(value, 9)
         self.assertEquals(l, [3])
     
+class AttributeReferenceTest(unittest.TestCase):
+
+    def test_pickle_mock_reference(self):
+        s = dumps(MockReference(1))
+        l = loads(s)
+        self.assertTrue(l.isMockReference())
+
+    def test_value(self):
+        l = []
+        m = MockReference(l)
+        ref = AttributeReference(m, 'append')
+        self.assertEquals(ref.value, l.append)
         
+    def test_reduce(self):
+        l = []
+        self.assertRaises(Exception,
+                          lambda: dumps(l.append))
+        m = ref(l)
+        ar = AttributeReference(m, 'append')
+        s = dumps(ar)
+        ar2 = loads(s)
+        self.assertEquals(ar2.value, l.append)
+        self.assertNotEquals(ar2.value, list().append)
+
+
+class ReferenceMultiProcessTest(TestBase):
+
+    def test_append_to_list(self):
+        l = []
+        r = reference(l, sync)
+        none = self.pool.apply(r.append, (4,))
+        self.assertEquals(none, None)
         
-if __name__ == '__main__':
+    def test_pop_from_list(self):
+        l = [4]
+        r = reference(l, sync)
+        four = self.pool.apply(r.pop, ())
+        self.assertEquals(four, 4)
+
+    @unittest.skip('this is not the duty of a reference')
+    def test_dir_list_from_other_side(self):
+        l1 = functionsOf([])
+        r = self.pool.apply(reference, ([], sync))
+        l2 = functionOf(r)
+        print l1, l2,
+        self.assertEquals(l1, l2)
+
+    def test_pickle_reference(self):
+        s = dumps((reference, ([], sync)))
+        l = loads(s)
+        self.assertEquals(l, (reference, ([], sync)))
+
+    @unittest.skip('todo or not?')
+    def test_class_of_list_reference_is_list(self):
+        r = self.pool.apply(reference, ([], sync))
+        self.assertEquals(r.__class__, list)
+    
+##
+#### for dir()
+
+class M(type):
+    def __getattribute__(self, name):
+        print 'type', name
+        v = type.__getattribute__(self, name)
+        print v
+        print
+        return v
+
+class Y(object):
+    __metaclass__ = M
+    def __getattribute__(self, name):
+        print name
+        v = object.__getattribute__(self, name)
+        print v
+        print
+        return v
+
+
+    
+if __name__ == '__maind__':
     import thread
-    defaultTest = None#'ReferenceTest'
-    kw = dict(defaultTest = defaultTest, exit = False, verbosity = 1)
+    defaultTest = 'AsyncTest.test_setValue_error'
+    kw = dict(defaultTest = defaultTest, exit = False, verbosity = 2)
     unittest.main(**kw)
 ##    _id = thread.start_new(unittest.main, (), kw)

@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="Docutils 0.9: http://docutils.sourceforge.net/" />
-<title>What is achieved</title>
+<title>LocalObjectDatabase</title>
 <style type="text/css">
 
 /*
@@ -314,42 +314,79 @@ ul.auto-toc {
 </style>
 </head>
 <body>
-<div class="document" id="what-is-achieved">
-<h1 class="title">What is achieved</h1>
+<div class="document" id="localobjectdatabase">
+<h1 class="title">LocalObjectDatabase</h1>
 
-<div class="section" id="what-is-important">
-<h1>What is important</h1>
-<ul class="simple">
-<li>Connection protocols IPv4/6, Windows Pipes, maybe Unix pipes <a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/Listener.py">py</a></li>
-<li>object references
-<a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/reference.py">py</a>
-<a class="reference external" href="reference.rst">rst</a>
-<a class="reference external" href="reference.html">html</a></li>
-<li>tools for sending objects to friends <a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/tools.py">py</a>
-<a class="reference external" href="tools.rst">rst</a>
-<a class="reference external" href="tools.html">html</a></li>
-</ul>
+<div class="section" id="how-references-can-be-used">
+<h1>How references can be used</h1>
+<p>Objects can be stored in a LocalObjectDatabase with <em>localObjectDatabase.store(anObject)</em>.
+This function returns a DatabaseReference to the object.
+A simplified view of these objects can be seen below.</p>
+<p><img alt="classDiagramLocal" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_class_diagram_local.png" /></p>
+<p>All references have a <em>process</em> attribute. So one can send calls to the objects original process.
+Those calls may include such a DatabaseReference.
+When deserialized in its orginal process, the reference object becomes a local one.
+One can test on this with <em>isLocal()</em>.
+Local references have a <em>value</em> attribute for the referenced object.
+So one can access the object once one is in the objects process.</p>
+<p>If you want to use reference proxies to objects see this: <a class="reference external" href="reference.rst">(rst)</a> <a class="reference external" href="reference.html">(html)</a></p>
 </div>
-<div class="section" id="what-is-interesting">
-<h1>What is interesting</h1>
-<ul class="simple">
-<li>What is a Process.
-<a class="reference external" href="process.rst">rst</a>
-<a class="reference external" href="process.html">html</a>
-<a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/Process.py">py</a></li>
-<li>A database for objects and refeences
-<a class="reference external" href="LocalObjectDatabase.rst">rst</a>
-<a class="reference external" href="LocalObjectDatabase.html">html</a>
-<a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/LocalObjectDatabase.py">py</a></li>
-<li>How a Connection gets to know about its endpoints.
-<a class="reference external" href="set_connection_endpoints.rst">rst</a>
-<a class="reference external" href="set_connection_endpoints.html">html</a>
-<a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/setConnectionEndpointsAlgorithm.py">py</a></li>
-<li>Serialize connections
-<a class="reference external" href="serialize_connections.rst">rst</a>
-<a class="reference external" href="serialize_connections.html">html</a>
-<a class="reference external" href="https://github.com/amintos/akira/blob/playground/process/Listener.py">py</a></li>
-</ul>
+<div class="section" id="how-references-work">
+<h1>How references work</h1>
+<p>A LocalObjectDatabase is a id-to-object storage.
+Objects can be stored under multiple references and such under multiple ids.</p>
+<p>There are three kinds of references present.
+Although they may reference the same object, those three types are used according to the process
+the reference object is in and how it got there.</p>
+<p><img alt="classDiagram" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_class_diagram.png" /></p>
+<p>All references have a attribute <em>process</em> representing the process of the referenced object.
+Also they all have an <em>id</em> and the <em>database</em> they are stored in.
+The <em>id</em>, the <em>process</em> and the <em>database</em> together identify an object.
+The process is nescessairy because the database exists in every process.</p>
+<p>See the following illustrations for how references are used.</p>
+<p><img alt="explanation" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_explanation.png" /></p>
+<p>Below LocalDatabaseReferences are used in the process where the referenced object is.</p>
+<p><img alt="local" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_local.png" /></p>
+<p>They have a <em>value</em> that can be set and got. This values is looked up and stored in the database under the id of the reference.
+If the reference gets deleted the id &quot;1&quot; is popped from the database.</p>
+<p>See what happens when an object crosses border to an other process:</p>
+<p><img alt="direct" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_direct.png" /></p>
+<p>First the object is stored under the id &quot;2&quot; . Then a reference constructor is sent to the other process.
+In the other process a RemoteReference is built that directly references the object under the id 2.
+If the reference is deleted a call is made to the process that pops the id &quot;2&quot; from the database.</p>
+<p><img alt="indirect1" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_indirect_1.png" /></p>
+<p>When a direct reference is sent to another process it can not get a new id for the object. Sending must be fast.
+Instead the direct reference is referenced by the IndirectRemoteDatabaseReference.
+This prevents the deletion of the object under id &quot;2&quot; in case the direct reference is deleted.</p>
+<p><img alt="indirect2" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_indirect_2.png" /></p>
+<p>When the indirect reference is created a call is sent to the original process to get a new direct reference.</p>
+<p>The old reference is freed:</p>
+<p><img alt="indirect3" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_indirect_3.png" /></p>
+<p>If below a indirect reference is sent to another process, almost the same happens.</p>
+<p><img alt="indirect4" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_indirect_4.png" /></p>
+<p>The difference is the following:
+The new indirect reference references the direct &quot;3&quot; instead of the indirect &quot;3&quot;.
+Resulting in:</p>
+<p><img alt="indirect5" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_indirect_5.png" /></p>
+</div>
+<div class="section" id="removed-race-condition">
+<h1>Removed Race-condition</h1>
+<p>Imagin the following scenario:</p>
+<p>The indirect reference in the bottom was created in another process before the reference on the right received a new id.
+As shown with the red arrow, it does reference the direct reference but the indirect one.</p>
+<p>The race condition looks like this:</p>
+<blockquote>
+<ol class="arabic simple">
+<li>The request for id 4 is sent.</li>
+<li>The request for id &quot;3&quot; is finished</li>
+<li>The direct reference for &quot;2&quot; is deleted, not needed anymore.</li>
+<li>The object is popped from database under id &quot;2&quot;</li>
+<li>The request for a new id &quot;4&quot; arrives and tries to access the object under id &quot;2&quot; - an invalid operation.</li>
+</ol>
+</blockquote>
+<p><img alt="raceCondition" src="https://raw.github.com/amintos/akira/playground/documentation/images/LocalObjectDatabase_reference_race.png" /></p>
+<p>But this race-condition is removed by referencing the direct references by indirect references.
+So only if those indirect references receive a new id, the direct references can be freed if really no longer required.</p>
 </div>
 </div>
 </body>

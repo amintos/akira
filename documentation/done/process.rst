@@ -17,7 +17,9 @@ After some thoughts: It would be good to have a single object *p* one can carry 
 
 If one does not have to worry how to connect back to the origins of an object one can more easily implement these:
 
-- Object references to objects in other processes (see proxy_)
+- Object references to objects in other processes (see reference `(rst)
+  <reference.rst>`__ `(html)
+  <reference.html>`__ )
 - Mobile objects (as Process_ es)
 
 
@@ -33,10 +35,19 @@ There is Process1 on the left and Process2 on the right. Both have an object wit
 If now the user |user| in Process1 wants to connect to Process2, it creates a connection to Process2's listener.
 This listener then creates a connection on his side of the net for process1.
 Process1 in Process2 is a representative for the original Process1 in Process1. It holds the connection.
-Both sides of a connection are informed about ther endpoints called fromProcess and toProcess. `(rst)
+Both sides of a connection are informed about ther endpoints called fromProcess and toProcess `(rst)
 <set_connection_endpoints.rst>`__
 `(html)
-<set_connection_endpoints.html>`__
+<set_connection_endpoints.html>`__ .
 Process1 in Process1 and Process2 in Process2 are of type Process_.thisProcess.
 Process1 in Process2 and Process2 in Process1 are of type Process_.ProcessInOtherProcess.
 
+Questions?
+----------
+
+Which processes does my process know? *thisProcess.knownProcesses* 
+
+How does it know about other processes connected? `(rst)
+<set_connection_endpoints.rst>`__
+`(html)
+<set_connection_endpoints.html>`__ .
