@@ -141,7 +141,7 @@ class PredecessorTest(SuccessorTest):
 
 class SumTest(LogicTest):
 
-    code = '''(s 1 1 a) (s 2 3 a) (s 3 6 a)'''
+    code = ''' (s 1 1 a) (s 2 3 a) (s 3 6 a)'''
 
     def test_0_is_not_included(self):
         self.logic.s('0', _, _, self.c)
@@ -155,14 +155,72 @@ class SumTest(LogicTest):
         self.logic.s(_, _, 'a', self.c)
         self.assertEvaluated(set([('1', '1'), ('2', '3'), ('3', '6')]))
 
+def hexform(*args):
+    d = {}
+    for a in args:
+        d[a] = a.encode('hex')
+    return d
 
-##class MatchTest(unittest.TestCase):
-##
-##    def test_atom_matches_itself(self):
-##        a = Atom('a')
-##        self.assertTrue(a.matches(a))
-##        self.assertTrue(a.matches(Atom(a)))
+class CompileTest(unittest.TestCase):
+
+    def test_nothing(self):
+        t = Theory(())
+        self.assertEquals(t.compiled(), '')
+
+    def test_a(self):
+        t = Theory((('a',),))
+        self.assertEquals(t.compiled(), '''def a_(callback):
+    callback()''')
+
+    def test_atom(self):
+        self.assertEquals(Atom('asdfa').compiled(), '"asdfa_"')
+        
+    def test_variable(self):
+        self.assertEquals(Variable('asdfa').compiled(), 'asdfa_')
+        
+    def test_variable_special(self):
+        self.assertEquals(Variable('\asdfa\\_').compiled(), \
+                          '\asdfa\\_'.encode('hex'))
+        
+    def test_one_argument(self):
+        t = Theory((('a', 'b'),))
+        self.assertEquals(t.compiled(), '''def a_(a1, callback):
+    if a1 == "b_": callback("b_")''')
+
+    def test_execute(self):
+        t = Theory((('a', 'b'),))
+        l = []
+        t.functions['a_']('b_', l.append)
+        self.assertEquals(l, ['b_'])
+        t.functions['a_'](_, l.append)
+        self.assertEquals(l, ['b_'] * 2)
+        
+    def test_one_argument2(self):
+        t = Theory((('a', 'b'), ('a', 'c'),))
+        self.assertEquals(t.compiled(), '''def a_(a1, callback):
+    if a1 == "b_": callback("b_")
+    if a1 == "c_": callback("c_")''')
+        l = []
+        print t.compiled()
+        t.functions['a_']('b_', l.append)
+        self.assertEquals(l, ['b_'])
+        t.functions['a_'](_, l.append)
+        self.assertEquals(l, ['b_'] * 2 + ['c_'])
+    
+    def test_three_arguments(self):
+        t = Theory((('a', 'b', 'c', 'd'),))
+        self.assertEquals(t.compiled(), '''def a_(a1, a2, a3, callback):
+    if a1 == "b_" and a2 == "c_" and a3 == "d_": callback("b_", "c_", "d_")''')
+
+
+    def test_rule_with_one_term(self):
+        t = Theory((('<=', ('a', 'b'), ('b', 'x')),))
+        self.assertEquals(t.compiled(), '''def a_(a1, callback):
+    def callb_(a1):
+        assert a1 == "x_"
+        callback("b_")
+    b_("x_", callb_)''')
         
 if __name__ == '__main__':
-    dT = None; 'SumTest'
+    dT = 'CompileTest';None; 'SumTest'
     unittest.main(defaultTest = dT, exit = False)

@@ -1,6 +1,16 @@
 from collections import defaultdict
 
 
+def toVariableName(string):
+    if string.isalnum():
+        return string + '_'
+    return string.encode('hex')
+
+def ident(string):
+    return string.replace('\n', '\n    ')
+
+
+
 class TheoryMethod(list):
 
     def __init__(self, theory):
@@ -11,29 +21,46 @@ class TheoryMethod(list):
     def name(self):
         return self[0].functor
 
+    @property
+    def argumentString(self):
+        return self[0].argumentString
+
     def __call__(self, *args):
         for term in self:
-            term.match(*args)
+            term.match(self._theory, *args)
 
+
+    def compiled(self):
+        s = 'def %s(%s):\n    ' % (toVariableName(self.name), \
+                                   self.argumentString)
+        l = [ident(term.compiled()) for term in self]
+        return s + '\n    '.join(l)
+    
 class Theory(object):
 
     def newTheoryMethod(self):
         return TheoryMethod(self)
 
     def __init__(self, gdl):
+        self.gdl = gdl
         self.statements = defaultdict(self.newTheoryMethod) # { predicate : statement }
         for gdl_statement in gdl:
             term = Term.from_gdl(gdl_statement)
             self.statements[term.functor].append(term)
+        self.functions ={}
+        
+        exec self.compiled() in self.functions
 
     @property
-    def methodDictionairy(self):
-        return self.statements
+    def methods(self):
+        return self.statements.values()
+
+    def compiled(self):
+        return '\n'.join(map(lambda method: method.compiled(), self.methods))
 
 
 # -----------------------------------------------------------------------------
 # TERMS
-
 
 class Term(object):
 
@@ -51,7 +78,7 @@ class Term(object):
         else:
             return CompoundTerm.from_gdl(gdl)
 
-    def match(self, *args):
+    def match(self, theory, *args):
         raise NotImplementedError('to be implemented in subclasses')
 
     def __repr__(self):
@@ -78,7 +105,7 @@ class Atom(Term):
         else:
             return Atom(gdl)
 
-    def match(self, a, cb):
+    def match(self, theory, a, cb):
         if a is _:
             cb(self.functor)
         elif a == self.functor:
@@ -90,12 +117,17 @@ class Atom(Term):
     def __ne__(self, other):
         return not self == other
 
+    def compiled(self):
+        return '"%s"' % toVariableName(self.functor)
 
-class Variable(Atom):
+
+class Variable(Term):
 
     def data(self):
         return '?%s' % self.functor
 
+    def compiled(self):
+        return toVariableName(self.functor)
 # -----------------------------------------------------------------------------
 # N-ARY TERMS
 
@@ -117,7 +149,7 @@ class CompoundTerm(Term):
         else:
             return CompoundTerm(functor, map(Term.from_gdl, gdl[1:]))
 
-    def match(self, *args):
+    def match(self, theory, *args):
         cb = args[-1]
         args = args[:-1]
         v = []
@@ -134,6 +166,27 @@ class CompoundTerm(Term):
     def __repr__(self):
         return '<%s %s: %s>' % (self.__class__.__name__, self.functor, \
                                 ','.join(map(repr, self.args)))
+
+    def compiled(self):
+        if not self.args:
+            return 'callback()'
+        assert all(map(lambda a: a.isAtom(), self.args)), 'no variables allowed'
+        ands = ['%s == %s' % (argumentName, self.args[i].compiled()) \
+                for i, argumentName in enumerate(self.callbackArguments)]
+        callbackValues = ', '.join([atom.compiled() for atom in self.args])
+        return 'if %s: callback(%s)' % (' and '.join(ands), \
+                                        callbackValues)
+    @property
+    def callbackArguments(self):
+        return ['a%i' % i for i in range(1, len(self.args) + 1)]
+
+    @property
+    def argumentNames(self):
+        return self.callbackArguments + ['callback']
+
+    @property
+    def argumentString(self):
+        return ', '.join(self.argumentNames)
 
 class BinaryTerm(CompoundTerm):
 
@@ -179,6 +232,12 @@ class Rule(CompoundTerm):
     @staticmethod
     def from_gdl(gdl):
         return Rule(Term.from_gdl(gdl[1]), map(Term.from_gdl, gdl[2:]))
+
+    def match(self, theory, *args):
+        print self.body
+
+    def compiled(self):
+        pass
 
 # -----------------------------------------------------------------------------
 # Mapping from special functors to term subclasses
@@ -249,7 +308,15 @@ class logic(object):
         self.__dict__ = theory.methodDictionairy
     
 class _:
-    pass
+    def __eq__(self, other):
+        return True
+    def __ne__(self, other):
+        return False
+    def __repr__(self):
+        return '_'
+
+_ = _()
+
 
 __all__ = ['_', 'logic', 'Theory', 'Term', 'Rule', 'Variable', 'Or', 'Atom', \
-           'Not']
+           'Not', 'toVariableName']
