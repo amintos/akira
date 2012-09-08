@@ -208,6 +208,6 @@ if __name__ == '__main__':
     dT = None
 ##    dT = 'DeferredMessageSendTest.test_call_inside_is_executed_inside'
     unittest.main(defaultTest = dT, exit = False, verbosity = 1)
-    import sys
-    if not 'idlelib' in sys.modules:
-        raw_input()
+##    import sys
+##    if not 'idlelib' in sys.modules:
+##        raw_input()

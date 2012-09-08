@@ -51,7 +51,19 @@ class TermInterpretationTest(unittest.TestCase):
         self.assertEqual('a', t.statements['b'][0].body[0].functor)
 
 
-class SuccessorTest(unittest.TestCase):
+class LogicTest(unittest.TestCase):
+
+    code = ''
+
+    def setUp(self):
+        self.logic = logic.fromString(self.code)
+        self.values = []
+        self.c = lambda *args: self.values.append(args)
+
+    def assertEvaluated(self, expectedValues):
+        self.assertEquals(set(self.values), set(expectedValues))
+
+class SuccessorTest(LogicTest):
 
     code = '''
 (s 1 2)
@@ -61,30 +73,25 @@ class SuccessorTest(unittest.TestCase):
 (s 5 6)
 '''
 
-    def setUp(self):
-        self.logic = logic.fromString(self.code)
-        self.values = []
-        self.c = lambda *args: self.values.append(args)
-
     def test_get_successor_1(self):
         self.logic.s('1', _, self.c)
-        self.assertEquals(self.values, [('2',)])        
+        self.assertEvaluated([('2',)])        
         
     def test_get_successor_nothing(self):
         self.logic.s('nothing', _, self.c)
-        self.assertEquals(self.values, [])
+        self.assertEvaluated([])
 
     def test_get_inverse_successor(self):
         self.logic.s(_, '4', self.c)
-        self.assertEquals(self.values, [('3',)])
+        self.assertEvaluated([('3',)])
         
     def test_verify_successor(self):
         self.logic.s('3', '4', self.c)
-        self.assertEquals(self.values, [()])
+        self.assertEvaluated([()])
         
     def test_all_successors(self):
         self.logic.s(_, _, self.c)
-        expectedValues = set([(x, x + 1) for x in range(1, 6)])
+        expectedValues = set([(str(x), str(x + 1)) for x in range(1, 6)])
         self.assertEquals(set(self.values), expectedValues)
 
 class Successor2Test(SuccessorTest):
@@ -96,11 +103,11 @@ class Successor2Test(SuccessorTest):
 
     def test_predecessor_of_1(self):
         self.logic.p('1', _, self.c)
-        self.assertEquals(self.values, [])
+        self.assertEvaluated([])
 
     def test_predecessor_of_2(self):
         self.logic.p('2', _, self.c)
-        self.assertEquals(self.values, [('1',)])
+        self.assertEvaluated([('1',)])
 
     def test_predecessor_equals_successor(self):
         def f(x, y):
@@ -114,9 +121,36 @@ class Successor2Test(SuccessorTest):
 
     def test_p_yields_all_values(self):
         self.logic.p(_, _, self.c)
-        expectedValues = set([(x + 1, x) for x in range(1, 6)])
+        expectedValues = set([(str(x + 1), str(x)) for x in range(1, 6)])
         self.assertEquals(set(self.values), expectedValues)
 
+    def test_replace_underscore(self):
+        global _
+        import logic as l
+        a = _
+        try:
+            l._ = _ = object()
+            self.test_predecessor_of_1()
+        finally:
+            l._ = _ = a
 
+class SumTest(LogicTest):
+
+    code = '''(s 1 1 a) (s 2 3 a) (s 3 6 a)'''
+
+    def test_0_is_not_included(self):
+        self.logic.s('0', _, _, self.c)
+        self.assertEvaluated([])
+
+    def test_1(self):
+        self.logic.s('1', '1', _, self.c)
+        self.assertEvaluated([('a',)])
+
+    def test_all_elements(self):
+        self.logic.s(_, _, 'a', self.c)
+        self.assertEvaluated(set([('1', '1'), ('2', '3'), ('3', '6')]))
+
+
+        
 if __name__ == '__main__':
     unittest.main(exit = False)
