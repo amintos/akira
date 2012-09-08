@@ -1,6 +1,5 @@
 from collections import defaultdict
 
-
 def toVariableName(string):
     if string.isalnum():
         return string + '_'
@@ -49,8 +48,7 @@ class Theory(object):
         self.gdl = gdl
         self.statements = defaultdict(self.newTheoryMethod) # { predicate : statement }
         for gdl_statement in gdl:
-            term = Term.from_gdl(gdl_statement)
-            self.statements[term.functor].append(term)
+            self.hold(Term.from_gdl(gdl_statement))
         self.functions ={}
 
         c = self.compiled()
@@ -67,6 +65,9 @@ class Theory(object):
     def compiled(self):
         return '\n'.join(map(lambda method: method.compiled(), self.methods))
 
+    def hold(self, term):
+        self.statements[term.functor].append(term)
+        return self
 
 # -----------------------------------------------------------------------------
 # TERMS
@@ -137,6 +138,7 @@ class Variable(Term):
 
     def compiled(self):
         return toVariableName(self.functor)
+
 # -----------------------------------------------------------------------------
 # N-ARY TERMS
 
