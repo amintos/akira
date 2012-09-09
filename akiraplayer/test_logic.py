@@ -1,6 +1,23 @@
 import unittest
 from logic import *
 
+def getIdent(line):
+    i = 0
+    while i < len(line) and line[i] in ' \r\t':
+        i += 1
+    return i
+
+def normalizeSource(string):
+    assert not '\t' in string
+    final = []
+    for line in string.split('\n'):
+        if len(line) == getIdent(line):
+            continue
+        final.append(line)
+    return '\n'.join(final)
+    
+    
+
 class TermInterpretationTest(unittest.TestCase):
 
     def test_atom(self):
@@ -96,6 +113,7 @@ class SuccessorTest(LogicTest):
         expectedValues = set([(str(x), str(x + 1)) for x in range(1, 6)])
         self.assertEquals(set(self.values), expectedValues)
 
+@unittest.skip('TODO')
 class PredecessorTest(SuccessorTest):
     code = SuccessorTest.code + '''
 
@@ -160,13 +178,29 @@ def hexform(*args):
 
 class CompileTest(unittest.TestCase):
 
+    def assertSourceEquals(self, source, expected):
+        sourceLines = normalizeSource(source).split('\n')
+        expectedLines = normalizeSource(expected).split('\n')
+        line = 0
+        for sourceLine, expectedLine in zip(sourceLines, expectedLines):
+            line += 1
+            char = 0
+            for sourceChar, expectedChar in zip(sourceLine, expectedLine):
+                self.assertEquals(sourceChar, expectedChar, 'Sources shall be'\
+                                  ' equal:\n'\
+                                  '---- in ---- \n%s\n---- expected ----\n%s\n'\
+                                  '---- in line %i ----\n%s\n%s\n%s' % (\
+                                      source, expected, line, sourceLine, \
+                                      expectedLine, ' ' * char + '^'))
+                char += 1
+
     def test_nothing(self):
         t = Theory(())
-        self.assertEquals(t.compiled(), '')
+        self.assertSourceEquals(t.compiled(), '')
 
     def test_a(self):
         t = Theory((('a',),))
-        self.assertEquals(t.compiled(), '''def a_(callback):
+        self.assertSourceEquals(t.compiled(), '''def a_(callback):
     callback()''')
 
     def test_atom(self):
@@ -181,7 +215,7 @@ class CompileTest(unittest.TestCase):
         
     def test_one_argument(self):
         t = Theory((('a', 'b'),))
-        self.assertEquals(t.compiled(), '''def a_(a1, callback):
+        self.assertSourceEquals(t.compiled(), '''def a_(a1, callback):
     if a1 == "b_": callback("b_")''')
 
     def test_execute(self):
@@ -194,7 +228,7 @@ class CompileTest(unittest.TestCase):
         
     def test_one_argument2(self):
         t = Theory((('a', 'b'), ('a', 'c'),))
-        self.assertEquals(t.compiled(), '''def a_(a1, callback):
+        self.assertSourceEquals(t.compiled(), '''def a_(a1, callback):
     if a1 == "b_": callback("b_")
     if a1 == "c_": callback("c_")''')
         l = []
@@ -205,13 +239,13 @@ class CompileTest(unittest.TestCase):
     
     def test_three_arguments(self):
         t = Theory((('a', 'b', 'c', 'd'),))
-        self.assertEquals(t.compiled(), '''def a_(a1, a2, a3, callback):
+        self.assertSourceEquals(t.compiled(), '''def a_(a1, a2, a3, callback):
     if a1 == "b_" and a2 == "c_" and a3 == "d_": callback("b_", "c_", "d_")''')
 
 
     def test_rule_with_one_term(self):
         t = Theory((('<=', ('a', 'b'), ('b', 'x')), ('b', 'x')))
-        self.assertEquals(t.compiled(), '''def a_(a1, callback):
+        self.assertSourceEquals(t.compiled(), '''def a_(a1, callback):
     def callback_(a1):
         assert (a1,) == ("x_",)
         callback("b_")
@@ -227,9 +261,45 @@ def b_(a1, callback):
         l = []
         t.functions['a_'](_, l.append)
         self.assertEquals(l, [])
+
+    def assertEvaluates(self, theory, function, result):
+        l = []
+        theory.functions[function](_, l.append)
+        self.assertEquals(l, result)
+   
+    def test_rule_with_two_terms_false_true(self):
+        t = Theory((('<=', ('a', 'b'), ('b', 'x'), ('f', 'a')), \
+                    ('f', 'a'), ('b', 'y')))
+        self.assertEvaluates(t, 'a_', [])
+
+    def test_rule_with_two_terms_true_true(self):
+        t = Theory((('<=', ('a', 'b'), ('b', 'y'), ('f', 'a')), \
+                    ('f', 'a'), ('b', 'y')))
+        self.assertEvaluates(t, 'a_', ['b_'])
+
+    def test_rule_with_two_terms_false_true(self):
+        t = Theory((('<=', ('a', 'b'), ('b', 'y'), ('f', 'a')), \
+                    ('f', 'b'), ('b', 'y')))
+        self.assertEvaluates(t, 'a_', [])
+
+    def test_rule_with_two_terms_false_false(self):
+        t = Theory((('<=', ('a', 'b'), ('b', 'y'), ('f', 'a')), \
+                    ('f', 'b'), ('b', 'x')))
+        self.assertEvaluates(t, 'a_', [])
+
+    def test_rule_with_no_terms(self):
+        t = Theory((('<=', ('f', 'g'), ), \
+                    ('f', 'b'), ('b', 'x')))
+        self.assertEvaluates(t, 'f_', ['g_', 'b_'])
         
-    def test_rule_with_many_terms(self):
-        self.fail('TODO')
+    def test_variable_conversion(self):
+        self.assertBidirectionalVariableConversion('test!random')
+        self.assertBidirectionalVariableConversion('a')
+        self.assertBidirectionalVariableConversion(''.join(map(chr, range(256))))
+
+    def assertBidirectionalVariableConversion(self, string):
+        self.assertEquals(fromVariableName(toVariableName(string)), string)
+        
         
 if __name__ == '__main__':
     dT = None;'CompileTest';None; 'SumTest'

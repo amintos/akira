@@ -333,12 +333,18 @@ class Rule(CompoundTerm):
         print self.body
 
     def compiled(self):
-        c1 = self.body[0].callbackArgumentString
-        s = 'def callback_(%s):\n' % c1
-        s += ident('assert (%s,) == (%s,)\n' % (c1, self.body[0].callbackValueString))
-        s += 'callback(%s)\n' % self.callbackValueString
-        s += self.body[0].calling('callback_')
-        return s
+        all = ''
+        callback = 'callback(%s)\n' % self.callbackValueString
+        for element in self.body:
+            cas = element.callbackArgumentString
+            s = 'def callback_(%s):\n' % cas
+            s += ident('assert (%s,) == (%s,)\n%s' % (cas, element.callbackValueString, \
+                                                      all))
+            s += callback
+            callback = element.calling('callback_')
+            all = s
+        all += '\n' + callback
+        return all
 
 # -----------------------------------------------------------------------------
 # Mapping from special functors to term subclasses
@@ -428,4 +434,4 @@ _ = _()
 
 
 __all__ = ['_', 'logic', 'Theory', 'Term', 'Rule', 'Variable', 'Or', 'Atom', \
-           'Not', 'toVariableName']
+           'Not', 'toVariableName', 'fromVariableName']
