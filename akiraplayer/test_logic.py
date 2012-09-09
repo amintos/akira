@@ -67,6 +67,19 @@ class TermInterpretationTest(unittest.TestCase):
         self.assertIn('b', t.statements)
         self.assertEqual('a', t.statements['b'][0].body[0].functor)
 
+class VariableTest(unittest.TestCase):
+
+    def test_equality(self):
+        self.assertEquals(Variable('test'), Variable('test'))
+        v = Variable('72648ydkjfs')
+        self.assertEquals(v, v)
+        self.assertNotEquals(v, Variable('lalala'))
+
+    def test_hash(self):
+        self.assertEquals(hash(Variable('test')), hash(Variable('test')))
+        v = Variable('72648ydkjfs')
+        self.assertEquals(hash(v), hash(v))
+        self.assertNotEquals(hash(v), hash(Variable('lalala')))
 
 class LogicTest(unittest.TestCase):
 
@@ -331,7 +344,32 @@ def b_(a1, callback):
                               lambda: Theory((rule + conditions,), 0))
         finally:
             logic.maximumIdentationLevel -= 1
+
+    def test_more_dependencies(self):
+        rule = ('<=', ('a', '?x', '?y'), ('c', '?x', '?z'), \
+                                         ('d', '?y', '?z'))
+        facts = (('c', 'h', 'a'), ('c', 'i', 'b'), ('c', 'j', 'c'), \
+                 ('d', 'i', 'a'), ('d', 'j', 'b'), ('d', 'k', 'c'), )
+        t = Theory(facts + (rule,))
+        self.assertEvaluates(t, 'a_', [('h_','i_'), ('i_','j_'), ('j_', 'k_')], \
+                             (_,_))
         
+class FreeVraiableTest(unittest.TestCase):
+
+    def test_atom(self):
+        self.assertEquals(Atom('sdaf').unboundVariables, set())
+
+    def test_variable(self):
+        self.assertEquals(Variable('sdaf').unboundVariables, set([Variable('sdaf')]))
+
+    def test_in_terms(self):
+        rule = ('<=', ('a', '?x', '?y'), ('c', '?x', '?z'), \
+                                         ('d', '?z', '?y'))
+        facts = (('c', 'h', 'a'), ('c', 'i', 'b'), ('c', 'j', 'c'), \
+                 ('d', 'i', 'a'), ('d', 'j', 'b'), ('d', 'k', 'c'), )
+        t = Term.from_gdl(('term', ('a',)) + facts + (rule,))
+        self.assertEquals(t.unboundVariables, set(map(Variable, 'xyz')))
+
 
 class _Test(unittest.TestCase):
     def test_equal_right(self):
@@ -351,6 +389,6 @@ class _Test(unittest.TestCase):
         self.assertFalse('ajhsdfkas' != _)
 
 if __name__ == '__main__':
-    dT = None;'_Test';None;'CompileTest';None; 'SumTest'
+    dT = None;'FreeVraiableTest';None;'_Test';None;'CompileTest';None; 'SumTest'
     unittest.main(defaultTest = dT, exit = False)
 

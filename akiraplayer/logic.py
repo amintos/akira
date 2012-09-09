@@ -116,7 +116,7 @@ class Theory(object):
         self.functions = self.getFunctions()
 
     def getFunctions(self):
-        functions = {}
+        functions = {'_' : _}
         name = 'Theory%s' % id(self)
         if self.debug:functions['__name__'] = name
         source = self.compiled()
@@ -181,6 +181,9 @@ class Term(object):
     def isAtom(self):
         return False
 
+    def isVariable(self):
+        return False
+
     @staticmethod
     def from_gdl(gdl):
         if isinstance(gdl, str):
@@ -194,6 +197,10 @@ class Term(object):
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, self.functor)
 
+    @property
+    def unboundVariables(self):
+        raise NotImplementedError('to be implemented in subclasses')
+        
 # -----------------------------------------------------------------------------
 # 0-ARY TERMS
 
@@ -233,16 +240,36 @@ class Atom(Term):
     def boundToArgument(self, arg):
         return ''
 
+    @property
+    def unboundVariables(self):
+        return set(())
+
 class Variable(Term):
 
     def data(self):
         return '?%s' % self.functor
+
+    def isVariable(self):
+        return True
 
     def compiled(self):
         return toVariableName(self.functor)
 
     def boundToArgument(self, arg):
         return self.compiled() + ' = ' + arg
+
+    def __eq__(self, other):
+        return other.isVariable() and other._equals(self)
+
+    def _equals(self, other):
+        return self.functor == other.functor
+
+    def __hash__(self):
+        return hash(self.functor)
+
+    @property
+    def unboundVariables(self):
+        return set((self,))
 
 # -----------------------------------------------------------------------------
 # N-ARY TERMS
@@ -328,6 +355,14 @@ class CompoundTerm(Term):
         return '\n'.join([var.boundToArgument(arg) for var, arg in \
                          zip(self.args, self.callbackArguments)])
 
+    @property
+    def unboundVariables(self):
+        s = set()
+        for term in self.args:
+            s.update(term.unboundVariables)
+        return s
+
+
 class BinaryTerm(CompoundTerm):
 
     def __init__(self, functor, t1, t2):
@@ -337,6 +372,9 @@ class BinaryTerm(CompoundTerm):
 
     def data(self):
         return self.functor, t1.data(), t2.data()
+
+    def compiled(self):
+        raise NotImplementedError('to be done in subclasses')
 
 
 class Or(BinaryTerm):
@@ -393,12 +431,12 @@ class Rule(CompoundTerm):
     def from_gdl(gdl):
         return Rule(Term.from_gdl(gdl[1]), map(Term.from_gdl, gdl[2:]))
 
-    def match(self, theory, *args):
-        print self.body
-
     def compiled(self):
         assert maximumIdentationLevel > len(self.body)
         all = ''
+        varsUnbound = self.unboundVariables
+        unboundVariableString = '\n'.join(map(lambda v: v.compiled() + ' = _', \
+                                              varsUnbound))
         varsBound0 = self.variablesBoundToArguments
         callback = 'callback(%s)' % self.callbackValueString
         for element in self.body:
@@ -411,7 +449,7 @@ class Rule(CompoundTerm):
             s += callback + '\n'
             callback = element.calling('callback_')
             all = s
-        all = '%s\n%s%s' % (varsBound0, all, callback)
+        all = '%s\n%s\n%s%s' % (unboundVariableString,varsBound0, all, callback)
         return all
 
 # -----------------------------------------------------------------------------
