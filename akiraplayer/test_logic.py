@@ -261,9 +261,13 @@ def b_(a1, callback):
         t.functions['a_'](_, l.append)
         self.assertEquals(l, [])
 
-    def assertEvaluates(self, theory, function, result):
+    def assertEvaluates(self, theory, function, result, args = (_,)):
         l = []
-        theory.functions[function](_, l.append)
+        if len(args) == 1:
+            args = args + (l.append,)
+        else:
+            args = args + (lambda *args: l.append(args),)
+        theory.functions[function](*args)
         self.assertEquals(l, result)
    
     def test_rule_with_two_terms_false_true(self):
@@ -299,9 +303,15 @@ def b_(a1, callback):
     def assertBidirectionalVariableConversion(self, string):
         self.assertEquals(fromVariableName(toVariableName(string)), string)
 
-##    def test_three_jump_dependency(self):
-##        t = Theory((('<=', ('a','?x'), ('b','?x','?x')), \
-##                   (('<=', ('b','?x','?y'), ('c','?x'), ('c','?y')))
+    def test_three_jump_dependency(self):
+        t = Theory((('<=', ('a','?x'), ('b','?x','?x')), \
+                    ('<=', ('b','?x','?y'), ('c','?x'), ('d','?y')), \
+                    ('c','h'), ('c','i'), ('d','i')))
+        print t.source
+        self.assertEvaluates(t, 'c_', ['h_', 'i_'])
+        self.assertEvaluates(t, 'd_', ['i_'])
+        self.assertEvaluates(t, 'b_', [('h_','i_'),('i_','i_')], (_, _))
+        self.assertEvaluates(t, 'a_', ['i_'])
         
 
 class _Test(unittest.TestCase):
