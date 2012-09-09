@@ -1,14 +1,61 @@
 from collections import defaultdict
 
+# -----------------------------------------------------------------------------
+# determine the highest identation level
+
+
+def _tooHighIdentation(level):
+    try:
+        l = []
+        for ident in range(level):
+            l.append(' ' * ident + 'if 1:')
+        l.append(' ' * level + 'pass')
+        source = '\n'.join(l)
+        compile(source, '<identationtest>', 'exec')
+    except IndentationError:
+        return True
+    return False
+
+# do binary search
+maximumIdentationLevel = 1
+for i in range(20):
+    if _tooHighIdentation(maximumIdentationLevel):
+        lowLevel = maximumIdentationLevel // 2
+        highLevel = maximumIdentationLevel
+        while highLevel - lowLevel > 1:
+            if not _tooHighIdentation(lowLevel):
+                lowLevel = (highLevel + lowLevel) // 2
+            else:
+                ll = lowLevel
+                lowLevel = lowLevel - (highLevel - lowLevel) // 2
+                highLevel = ll
+                del ll
+        if not _tooHighIdentation(highLevel):
+            lowLevel = highLevel
+        maximumIdentationLevel = lowLevel
+        del lowLevel, highLevel
+        break
+    maximumIdentationLevel *= 2
+
+del i
+
+
+# -----------------------------------------------------------------------------
+# theory
+        
+
+
 def toVariableName(string):
-    if string.isalnum():
+    if string[0].isalpha() and string.isalnum(): 
         return string + '_'
-    return string.encode('hex')
+    return 'hex' + string.encode('hex')
 
 def fromVariableName(string):
     if string.endswith('_'):
         return string[:-1]
-    return string.decode('hex')
+    if string.startswith('hex'):
+        return string[3:].decode('hex')
+    raise ValueError('Not encoded: %r' % string)
 
 def ident(string):
     return '    ' + string.replace('\n', '\n    ')
@@ -60,7 +107,7 @@ class Theory(object):
     def methodDictionairy(self):
         return TheoryMethodDictionairy(self)
 
-    def __init__(self, gdl = (), debug = 1):
+    def __init__(self, gdl = (), debug = 2):
         self.debug = debug
         self.gdl = gdl
         self.statements = defaultdict(self.newTheoryMethod) # { predicate : statement }
@@ -70,13 +117,15 @@ class Theory(object):
 
     def getFunctions(self):
         functions = {}
-        if self.debug:functions['__name__'] = name = 'Theory%s' % id(self)
+        name = 'Theory%s' % id(self)
+        if self.debug:functions['__name__'] = name
         source = self.compiled()
         try:
             code = compile(source, name, 'exec')
             exec code in functions
         except:
-            print source
+            if self.debug >= 2:
+                print source
             raise
         if self.debug:
             functions['__loader__'] = TheoryLoader(source)
@@ -348,20 +397,21 @@ class Rule(CompoundTerm):
         print self.body
 
     def compiled(self):
+        assert maximumIdentationLevel > len(self.body)
         all = ''
         varsBound0 = self.variablesBoundToArguments
-        callback = 'callback(%s)\n' % self.callbackValueString
+        callback = 'callback(%s)' % self.callbackValueString
         for element in self.body:
             cas = element.callbackArgumentString
             varsBound = element.variablesBoundToArguments
             s = 'def callback_(%s):\n%s\n' % (cas, ident(varsBound))
             varsBound = element.variablesBoundToArguments
-            s += ident('assert (%s,) == (%s,)\n%s' % (cas, element.callbackValueString, \
+            s += ident('if (%s,) != (%s,): return\n%s' % (cas, element.callbackValueString, \
                                                       all))
-            s += callback
+            s += callback + '\n'
             callback = element.calling('callback_')
             all = s
-        all = '%s\n%s\n%s' % (varsBound0, all, callback)
+        all = '%s\n%s%s' % (varsBound0, all, callback)
         return all
 
 # -----------------------------------------------------------------------------
@@ -381,28 +431,9 @@ TERM_CLASSES = {
 }
 
 # -----------------------------------------------------------------------------
-#
+# a logic interface
 
 class logic(object):
-##    def s(self, x, y, c):
-##        if x == 'nothing' or y == '1':
-##            return 
-##        if x is not _ and y is not _:
-##            if int(x) - int(y) == -1:
-##                c()
-##        elif x is _ and y is not _:
-##            c(str(int(y) - 1))
-##        elif y is _ and x is not _:
-##            c(str(int(x) + 1))
-##        else:
-##            for i in range(1, 6):
-##                c(str(i), str(i + 1))
-##
-##    def p(self, x, y, c):
-##        if x == y == _:
-##            _c = c
-##            c = lambda x, y: _c(y, x)
-##        self.s(y, x, c)
 
     #
     # class side constuctor
@@ -440,6 +471,10 @@ class logic(object):
         if ret is l:
             raise AttributeError('%s is not a function os me!' % (name,))
         return ret
+
+# -----------------------------------------------------------------------------
+# the magic matching underscore
+
 class _:
     def __eq__(self, other):
         return True
@@ -450,6 +485,7 @@ class _:
 
 _ = _()
 
+    
 
 __all__ = ['_', 'logic', 'Theory', 'Term', 'Rule', 'Variable', 'Or', 'Atom', \
-           'Not', 'toVariableName', 'fromVariableName']
+           'Not', 'toVariableName', 'fromVariableName', 'maximumIdentationLevel']

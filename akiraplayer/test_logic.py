@@ -210,7 +210,7 @@ class CompileTest(unittest.TestCase):
         
     def test_variable_special(self):
         self.assertEquals(Variable('\asdfa\\_').compiled(), \
-                          '\asdfa\\_'.encode('hex'))
+                          'hex' + '\asdfa\\_'.encode('hex'))
         
     def test_one_argument(self):
         t = Theory((('a', 'b'),))
@@ -246,7 +246,7 @@ class CompileTest(unittest.TestCase):
         t = Theory((('<=', ('a', 'b'), ('b', 'x')), ('b', 'x')))
         self.assertSourceEquals(t.compiled(), '''def a_(a1, callback):
     def callback_(a1):
-        assert (a1,) == ("x_",)
+        if (a1,) != ("x_",): return
         callback("b_")
     b_("x_", callback_)
 def b_(a1, callback):
@@ -307,11 +307,30 @@ def b_(a1, callback):
         t = Theory((('<=', ('a','?x'), ('b','?x','?x')), \
                     ('<=', ('b','?x','?y'), ('c','?x'), ('d','?y')), \
                     ('c','h'), ('c','i'), ('d','i')))
-        print t.source
         self.assertEvaluates(t, 'c_', ['h_', 'i_'])
         self.assertEvaluates(t, 'd_', ['i_'])
         self.assertEvaluates(t, 'b_', [('h_','i_'),('i_','i_')], (_, _))
         self.assertEvaluates(t, 'a_', ['i_'])
+
+    def test_max_conditions(self):
+        rule = ('<=', ('hulk','strong'))
+        conditions = tuple(map(lambda x: (x,x), \
+                               map(str, range(maximumIdentationLevel - 1))))
+        t = Theory((rule + conditions,) + conditions)
+        self.assertEvaluates(t, 'hulk_', ['strong_'])
+        
+    def test_max_conditions_plus_1(self):
+        rule = ('<=', ('hulk','strong'))
+        conditions = tuple(map(lambda x: (x,x), \
+                               map(str, range(maximumIdentationLevel))))
+        self.assertRaises(AssertionError, lambda: Theory((rule + conditions,)))
+        import logic
+        logic.maximumIdentationLevel += 1
+        try:
+            self.assertRaises(IndentationError, \
+                              lambda: Theory((rule + conditions,), 0))
+        finally:
+            logic.maximumIdentationLevel -= 1
         
 
 class _Test(unittest.TestCase):
@@ -323,6 +342,14 @@ class _Test(unittest.TestCase):
         self.assertTrue(1 == _)
         self.assertTrue('ajhsdfk' == _)
         
+    def test_unequal_right(self):
+        self.assertFalse(_ != 132)
+        self.assertFalse(_ != 'aj12hsdfk')
+        
+    def test_unequal_left(self):
+        self.assertFalse(131 != _)
+        self.assertFalse('ajhsdfkas' != _)
+
 if __name__ == '__main__':
     dT = None;'_Test';None;'CompileTest';None; 'SumTest'
     unittest.main(defaultTest = dT, exit = False)
