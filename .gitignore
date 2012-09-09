@@ -25,4 +25,9 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+# IDE
+.idea
+
+# Generated Files / Databases
 akiradb
