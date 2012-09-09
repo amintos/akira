@@ -58,12 +58,9 @@ class LogicTest(unittest.TestCase):
     def setUp(self):
         self.logic = logic.fromString(self.code)
         self.values = []
+        
     def c(self, *args):
-        l = []
-        for arg in args:
-            assert arg.isAtom()
-            l.append(arg.functor)
-        self.values.append(tuple(l))
+        self.values.append(args)
 
     def assertEvaluated(self, expectedValues):
         self.assertEquals(set(self.values), set(expectedValues))
@@ -80,7 +77,7 @@ class SuccessorTest(LogicTest):
 
     def test_get_successor_1(self):
         self.logic.s('1', _, self.c)
-        self.assertEvaluated([('2',)])        
+        self.assertEvaluated([('1', '2',)])        
         
     def test_get_successor_nothing(self):
         self.logic.s('nothing', _, self.c)
@@ -88,11 +85,11 @@ class SuccessorTest(LogicTest):
 
     def test_get_inverse_successor(self):
         self.logic.s(_, '4', self.c)
-        self.assertEvaluated([('3',)])
+        self.assertEvaluated([('3','4')])
         
     def test_verify_successor(self):
         self.logic.s('3', '4', self.c)
-        self.assertEvaluated([()])
+        self.assertEvaluated([('3', '4')])
         
     def test_all_successors(self):
         self.logic.s(_, _, self.c)
@@ -149,11 +146,11 @@ class SumTest(LogicTest):
 
     def test_1(self):
         self.logic.s('1', '1', _, self.c)
-        self.assertEvaluated([('a',)])
+        self.assertEvaluated([('1','1','a',)])
 
     def test_all_elements(self):
         self.logic.s(_, _, 'a', self.c)
-        self.assertEvaluated(set([('1', '1'), ('2', '3'), ('3', '6')]))
+        self.assertEvaluated(set([('1','1','a'),('2','3','a'),('3','6','a')]))
 
 def hexform(*args):
     d = {}
@@ -201,7 +198,6 @@ class CompileTest(unittest.TestCase):
     if a1 == "b_": callback("b_")
     if a1 == "c_": callback("c_")''')
         l = []
-        print t.compiled()
         t.functions['a_']('b_', l.append)
         self.assertEquals(l, ['b_'])
         t.functions['a_'](_, l.append)
@@ -217,7 +213,7 @@ class CompileTest(unittest.TestCase):
         t = Theory((('<=', ('a', 'b'), ('b', 'x')), ('b', 'x')))
         self.assertEquals(t.compiled(), '''def a_(a1, callback):
     def callback_(a1):
-        assert a1 == "x_"
+        assert (a1,) == ("x_",)
         callback("b_")
     b_("x_", callback_)
 def b_(a1, callback):
@@ -235,6 +231,6 @@ def b_(a1, callback):
 
         
 if __name__ == '__main__':
-    dT = 'CompileTest';None; 'SumTest'
+    dT = None;'CompileTest';None; 'SumTest'
     unittest.main(defaultTest = dT, exit = False)
 

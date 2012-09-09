@@ -5,9 +5,13 @@ def toVariableName(string):
         return string + '_'
     return string.encode('hex')
 
+def fromVariableName(string):
+    if string.endswith('_'):
+        return string[:-1]
+    return string.decode('hex')
+
 def ident(string):
     return '    ' + string.replace('\n', '\n    ')
-
 
 
 class TheoryMethod(list):
@@ -32,31 +36,53 @@ class TheoryMethod(list):
         for term in self:
             term.match(self._theory, *args)
 
-
     def compiled(self):
         s = 'def %s(%s):\n' % (self.compiledName, \
                                    self.argumentString)
         l = [ident(term.compiled()) for term in self]
         return s + '\n'.join(l)
-    
+
+class TheoryLoader(object):
+    def __init__(self, source):
+        self.source = source
+
+    def get_source(self, name):
+        return self.source
+
 class Theory(object):
+
+    toVariableName = toFunctionName = staticmethod(toVariableName)
 
     def newTheoryMethod(self):
         return TheoryMethod(self)
 
-    def __init__(self, gdl):
+    @property
+    def methodDictionairy(self):
+        return TheoryMethodDictionairy(self)
+
+    def __init__(self, gdl = (), debug = 1):
+        self.debug = debug
         self.gdl = gdl
         self.statements = defaultdict(self.newTheoryMethod) # { predicate : statement }
         for gdl_statement in gdl:
             self.hold(Term.from_gdl(gdl_statement))
-        self.functions ={}
+        self.functions = self.getFunctions()
 
-        c = self.compiled()
+    def getFunctions(self):
+        functions = {}
+        if self.debug:functions['__name__'] = name = 'Theory%s' % id(self)
+        source = self.compiled()
         try:
-            exec c in self.functions
+            code = compile(source, name, 'exec')
+            exec code in functions
         except:
-            print c
+            print source
             raise
+        if self.debug:
+            functions['__loader__'] = TheoryLoader(source)
+            import linecache
+            linecache.updatecache(name, functions)
+        return functions
 
     @property
     def methods(self):
@@ -68,6 +94,30 @@ class Theory(object):
     def hold(self, term):
         self.statements[term.functor].append(term)
         return self
+
+    def getFunction(self, name, default = None):
+        l = []
+        func = self.functions.get(toVariableName(name), l)
+        if func is l:
+            return default
+        def ret(*args):
+            assert args, 'callback is the last argument'
+            callback = args[-1]
+            assert callable(callback), 'the callback must be callable'
+            args = args[:-1]
+            newArgs = []
+            for arg in args:
+                assert isinstance(arg, basestring) or arg is _, \
+                       'all arguments must be either _ or a string'
+                if arg is _:
+                    newArgs.append(_)
+                else:
+                    newArgs.append(toVariableName(arg))
+            def cb(*args):
+                callback(*map(fromVariableName, args))
+            newArgs.append(cb)
+            func(*newArgs)
+        return ret
 
 # -----------------------------------------------------------------------------
 # TERMS
@@ -285,8 +335,7 @@ class Rule(CompoundTerm):
     def compiled(self):
         c1 = self.body[0].callbackArgumentString
         s = 'def callback_(%s):\n' % c1
-        s += ident('assert %s == %s\n' % (c1, self.body[0].callbackValueString))
-        print c1
+        s += ident('assert (%s,) == (%s,)\n' % (c1, self.body[0].callbackValueString))
         s += 'callback(%s)\n' % self.callbackValueString
         s += self.body[0].calling('callback_')
         return s
@@ -357,8 +406,16 @@ class logic(object):
     #
 
     def __init__(self, theory):
-        self.__dict__ = theory.methodDictionairy
-    
+        self.theory = theory
+
+    def __getattr__(self, name):
+        if name == 'theory':
+            return self.__dict__['theory']
+        l = []
+        ret = self.theory.getFunction(name, l)
+        if ret is l:
+            raise AttributeError('%s is not a function os me!' % (name,))
+        return ret
 class _:
     def __eq__(self, other):
         return True

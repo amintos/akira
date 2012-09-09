@@ -23,5 +23,7 @@ for file in os.listdir('.'):
 # do not mess up test-output with loading output
 time.sleep(0.1)
 
+import sys
+
 # run and exit properly
-unittest.main()
+unittest.main(exit = 'idlelib' not in sys.modules)
