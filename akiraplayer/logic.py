@@ -14,6 +14,9 @@ def _tooHighIdentation(level):
         compile(source, '<identationtest>', 'exec')
     except IndentationError:
         return True
+    except RuntimeError:
+        assert level > 50
+        return True
     return False
 
 # do binary search
