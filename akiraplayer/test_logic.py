@@ -228,7 +228,8 @@ def b_(a1, callback):
         t.functions['a_'](_, l.append)
         self.assertEquals(l, [])
         
-
+    def test_rule_with_many_terms(self):
+        self.fail('TODO')
         
 if __name__ == '__main__':
     dT = None;'CompileTest';None; 'SumTest'
