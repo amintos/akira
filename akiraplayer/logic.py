@@ -37,7 +37,7 @@ class TheoryMethod(list):
             term.match(self._theory, *args)
 
     def compiled(self):
-        s = 'def %s(%s):\n' % (self.compiledName, \
+        s = '\ndef %s(%s):\n' % (self.compiledName, \
                                    self.argumentString)
         l = [ident(term.compiled()) for term in self]
         return s + '\n'.join(l)
@@ -82,6 +82,7 @@ class Theory(object):
             functions['__loader__'] = TheoryLoader(source)
             import linecache
             linecache.updatecache(name, functions)
+        self.source = source
         return functions
 
     @property
@@ -180,6 +181,8 @@ class Atom(Term):
     def compiled(self):
         return '"%s"' % toVariableName(self.functor)
 
+    def boundToArgument(self, arg):
+        return ''
 
 class Variable(Term):
 
@@ -188,6 +191,9 @@ class Variable(Term):
 
     def compiled(self):
         return toVariableName(self.functor)
+
+    def boundToArgument(self, arg):
+        return self.compiled() + ' = ' + arg
 
 # -----------------------------------------------------------------------------
 # N-ARY TERMS
@@ -268,6 +274,11 @@ class CompoundTerm(Term):
             args = callback
         return '%s(%s)' % (self.compiledName, args)
 
+    @property
+    def variablesBoundToArguments(self):
+        return '\n'.join([var.boundToArgument(arg) for var, arg in \
+                         zip(self.args, self.callbackArguments)])
+
 class BinaryTerm(CompoundTerm):
 
     def __init__(self, functor, t1, t2):
@@ -325,6 +336,10 @@ class Rule(CompoundTerm):
     def callbackValueString(self):
         return self.head.callbackValueString
 
+    @property
+    def variablesBoundToArguments(self):
+        return self.head.variablesBoundToArguments
+
     @staticmethod
     def from_gdl(gdl):
         return Rule(Term.from_gdl(gdl[1]), map(Term.from_gdl, gdl[2:]))
@@ -334,16 +349,19 @@ class Rule(CompoundTerm):
 
     def compiled(self):
         all = ''
+        varsBound0 = self.variablesBoundToArguments
         callback = 'callback(%s)\n' % self.callbackValueString
         for element in self.body:
             cas = element.callbackArgumentString
-            s = 'def callback_(%s):\n' % cas
+            varsBound = element.variablesBoundToArguments
+            s = 'def callback_(%s):\n%s\n' % (cas, ident(varsBound))
+            varsBound = element.variablesBoundToArguments
             s += ident('assert (%s,) == (%s,)\n%s' % (cas, element.callbackValueString, \
                                                       all))
             s += callback
             callback = element.calling('callback_')
             all = s
-        all += '\n' + callback
+        all = '%s\n%s\n%s' % (varsBound0, all, callback)
         return all
 
 # -----------------------------------------------------------------------------

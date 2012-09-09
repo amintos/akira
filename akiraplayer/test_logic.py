@@ -113,7 +113,6 @@ class SuccessorTest(LogicTest):
         expectedValues = set([(str(x), str(x + 1)) for x in range(1, 6)])
         self.assertEquals(set(self.values), expectedValues)
 
-@unittest.skip('TODO')
 class PredecessorTest(SuccessorTest):
     code = SuccessorTest.code + '''
 
@@ -127,12 +126,12 @@ class PredecessorTest(SuccessorTest):
 
     def test_predecessor_of_2(self):
         self.logic.p('2', _, self.c)
-        self.assertEvaluated([('1',)])
+        self.assertEvaluated([('2','1')])
 
     def test_predecessor_equals_successor(self):
         def f(x, y):
             l = []
-            def g():
+            def g(*args):
                 l.append('called')
             self.logic.s(y, x, g)
             self.assertEquals(l, ['called'])
@@ -299,9 +298,22 @@ def b_(a1, callback):
 
     def assertBidirectionalVariableConversion(self, string):
         self.assertEquals(fromVariableName(toVariableName(string)), string)
+
+##    def test_three_jump_dependency(self):
+##        t = Theory((('<=', ('a','?x'), ('b','?x','?x')), \
+##                   (('<=', ('b','?x','?y'), ('c','?x'), ('c','?y')))
         
+
+class _Test(unittest.TestCase):
+    def test_equal_right(self):
+        self.assertTrue(_ == 1)
+        self.assertTrue(_ == 'ajhsdfk')
+        
+    def test_equal_left(self):
+        self.assertTrue(1 == _)
+        self.assertTrue('ajhsdfk' == _)
         
 if __name__ == '__main__':
-    dT = None;'CompileTest';None; 'SumTest'
+    dT = None;'_Test';None;'CompileTest';None; 'SumTest'
     unittest.main(defaultTest = dT, exit = False)
 
