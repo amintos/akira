@@ -212,8 +212,8 @@ class CompileTest(unittest.TestCase):
 
     def test_a(self):
         t = Theory((('a',),))
-        self.assertSourceEquals(t.compiled(), '''def a_(callback):
-    callback()''')
+        self.assertSourceEquals(t.compiled(), '''def a_():
+    yield ()''')
 
     def test_atom(self):
         self.assertEquals(Atom('asdfa').compiled(), '"asdfa_"')
@@ -227,61 +227,52 @@ class CompileTest(unittest.TestCase):
         
     def test_one_argument(self):
         t = Theory((('a', 'b'),))
-        self.assertSourceEquals(t.compiled(), '''def a_(a1, callback):
-    if a1 == "b_": callback("b_")''')
+        self.assertSourceEquals(t.compiled(), '''def a_(a1):
+    if a1 == "b_": yield ("b_")''')
 
     def test_execute(self):
         t = Theory((('a', 'b'),))
-        l = []
-        t.functions['a_']('b_', l.append)
+        l = list(t.functions['a_']('b_'))
         self.assertEquals(l, ['b_'])
-        t.functions['a_'](_, l.append)
-        self.assertEquals(l, ['b_'] * 2)
+        l = list(t.functions['a_'](_))
+        self.assertEquals(l, ['b_'])
         
     def test_one_argument2(self):
         t = Theory((('a', 'b'), ('a', 'c'),))
-        self.assertSourceEquals(t.compiled(), '''def a_(a1, callback):
-    if a1 == "b_": callback("b_")
-    if a1 == "c_": callback("c_")''')
-        l = []
-        t.functions['a_']('b_', l.append)
+        self.assertSourceEquals(t.compiled(), '''def a_(a1):
+    if a1 == "b_": yield ("b_")
+    if a1 == "c_": yield ("c_")''')
+        l = list(t.functions['a_']('b_'))
         self.assertEquals(l, ['b_'])
-        t.functions['a_'](_, l.append)
-        self.assertEquals(l, ['b_'] * 2 + ['c_'])
+        l = list(t.functions['a_'](_))
+        self.assertEquals(l, ['b_', 'c_'])
     
     def test_three_arguments(self):
         t = Theory((('a', 'b', 'c', 'd'),))
-        self.assertSourceEquals(t.compiled(), '''def a_(a1, a2, a3, callback):
-    if a1 == "b_" and a2 == "c_" and a3 == "d_": callback("b_", "c_", "d_")''')
+        self.assertSourceEquals(t.compiled(), '''def a_(a1, a2, a3):
+    if a1 == "b_" and a2 == "c_" and a3 == "d_": yield ("b_", "c_", "d_")''')
 
 
     def test_rule_with_one_term(self):
         t = Theory((('<=', ('a', 'b'), ('b', 'x')), ('b', 'x')))
-        self.assertSourceEquals(t.compiled(), '''def a_(a1, callback):
-    def callback_(a1):
-        if (a1,) != ("x_",): return
-        callback("b_")
-    b_("x_", callback_)
-def b_(a1, callback):
-    if a1 == "x_": callback("x_")''')
-        l = []
-        t.functions['a_'](_, l.append)
+        self.assertSourceEquals(t.compiled(), '''
+def a_(a1):
+    for a1 in b_("x_"):
+        if (a1,) != ("x_",): continue
+        yield ("b_")
+        
+def b_(a1):
+    if a1 == "x_": yield ("x_")''')
+        l = list(t.functions['a_'](_))
         self.assertEquals(l, ["b_"])
 
     def test_rule_with_one_term2(self):
         t = Theory((('<=', ('a', 'b'), ('b', 'x')), ('b', 'y')))
-        l = []
-        t.functions['a_'](_, l.append)
+        l = list(t.functions['a_'](_))
         self.assertEquals(l, [])
 
     def assertEvaluates(self, theory, function, result, args = (_,)):
-        l = []
-        if len(args) == 1:
-            args = args + (l.append,)
-        else:
-            args = args + (lambda *args: l.append(args),)
-        theory.functions[function](*args)
-        self.assertEquals(l, result)
+        self.assertEquals(list(theory.functions[function](*args)), result)
    
     def test_rule_with_two_terms_false_true(self):
         t = Theory((('<=', ('a', 'b'), ('b', 'x'), ('f', 'a')), \
@@ -351,6 +342,7 @@ def b_(a1, callback):
         facts = (('c', 'h', 'a'), ('c', 'i', 'b'), ('c', 'j', 'c'), \
                  ('d', 'i', 'a'), ('d', 'j', 'b'), ('d', 'k', 'c'), )
         t = Theory(facts + (rule,))
+        print t.source
         self.assertEvaluates(t, 'a_', [('h_','i_'), ('i_','j_'), ('j_', 'k_')], \
                              (_,_))
         
@@ -389,6 +381,6 @@ class _Test(unittest.TestCase):
         self.assertFalse('ajhsdfkas' != _)
 
 if __name__ == '__main__':
-    dT = None;'FreeVraiableTest';None;'_Test';None;'CompileTest';None; 'SumTest'
+    dT = 'CompileTest'
     unittest.main(defaultTest = dT, exit = False)
 

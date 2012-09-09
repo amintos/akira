@@ -315,11 +315,11 @@ class CompoundTerm(Term):
 
     def compiled(self):
         if not self.args:
-            return 'callback()'
+            return 'yield ()'
         assert all(map(lambda a: a.isAtom(), self.args)), 'no variables allowed'
         ands = ['%s == %s' % (argumentName, self.args[i].compiled()) \
                 for i, argumentName in enumerate(self.callbackArguments)]
-        return 'if %s: callback(%s)' % (' and '.join(ands), \
+        return 'if %s: yield (%s)' % (' and '.join(ands), \
                                         self.callbackValueString)
     @property
     def callbackArguments(self):
@@ -331,7 +331,7 @@ class CompoundTerm(Term):
 
     @property
     def argumentNames(self):
-        return self.callbackArguments + ['callback']
+        return self.callbackArguments
 
     @property
     def argumentString(self):
@@ -345,13 +345,9 @@ class CompoundTerm(Term):
     def callbackValueString(self):
         return ', '.join([atom.compiled() for atom in self.args])
 
-    def calling(self, callback):
+    def calling(self):
         cba = self.callbackValueString
-        if cba:
-            args = cba + ', ' + callback
-        else:
-            args = callback
-        return '%s(%s)' % (self.compiledName, args)
+        return '%s(%s)' % (self.compiledName, cba)
 
     @property
     def variablesBoundToArguments(self):
@@ -441,16 +437,14 @@ class Rule(CompoundTerm):
         unboundVariableString = '\n'.join(map(lambda v: v.compiled() + ' = _', \
                                               varsUnbound))
         varsBound0 = self.variablesBoundToArguments
-        callback = 'callback(%s)' % self.callbackValueString
+        callback = 'yield (%s)' % self.callbackValueString
         for element in self.body:
             cas = element.callbackArgumentString
             varsBound = element.variablesBoundToArguments
-            s = 'def callback_(%s):\n%s\n' % (cas, ident(varsBound))
+            s = 'for %s in %s:\n%s\n' % (cas,element.calling(),ident(varsBound))
             varsBound = element.variablesBoundToArguments
-            s += ident('if (%s,) != (%s,): return\n%s' % (cas, element.callbackValueString, \
+            s += ident('if (%s,) != (%s,): continue\n%s' % (cas, element.callbackValueString, \
                                                       all))
-            s += callback + '\n'
-            callback = element.calling('callback_')
             all = s
         all = '%s\n%s\n%s%s' % (unboundVariableString,varsBound0, all, callback)
         return all
