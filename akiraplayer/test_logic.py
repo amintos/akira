@@ -366,6 +366,27 @@ def b_(a1):
 ##    x_ = s0_x_
 ##    y_ = s0_y_
 ##    z_ = s0_z_
+        
+##def a_(a1, a2):
+##    y_ = _
+##    x_ = _
+##    z_ = _
+##    x_ = a1
+##    y_ = a2
+##    if (a1, a2,) == (y_, z_,):
+##        for a1, a2 in d_(y_, z_):
+##            for result in a_1(a1, a2):
+##                yield result
+##        print 'd_', a1, a2
+##        y_ = a1
+##        z_ = a2
+##        if (a1, a2,) != (y_, z_,): continue
+##        for a1, a2 in c_(x_, z_):
+##            print 'c_', a1, a2
+##            x_ = a1
+##            z_ = a2
+##            if (a1, a2,) != (x_, z_,): continue
+##            yield (x_, y_)
         self.assertEvaluates(t, 'a_', [('h_','i_'), ('i_','j_'), ('j_', 'k_')], \
                              (_,_))
         

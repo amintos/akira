@@ -432,9 +432,14 @@ class Rule(CompoundTerm):
 
     def compiled(self):
         assert maximumIdentationLevel > len(self.body)
+        ## bind all variables to arguments
+        ## bind all unbound variables to _
+        ## check if arguments equal variables, else return
         all = ''
         varsUnbound = self.unboundVariables
-        unboundVariableString = '\n'.join(map(lambda v: v.compiled() + ' = _', \
+        
+        bindVars = lambda v: v.compiledBoundToArgument('_')
+        unboundVariableString = '\n'.join(map(bindVars, \
                                               varsUnbound))
         varsBound0 = self.variablesBoundToArguments
         callback = 'yield (%s)' % self.callbackValueString
